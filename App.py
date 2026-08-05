@@ -13,9 +13,29 @@ try:
 except ImportError:
   OCR_DISPONIBLE = False
 
+# ==============================================================================
+# 🌟 CONFIGURACIÓN DE PÁGINA E ÍCONO OFICIAL ("logo lab.webp")
+# ==============================================================================
+icono_app = "🧪"
+for posible_nombre in [
+    "logo lab.webp",
+    "logo lab.png",
+    "logo.webp",
+    "logo.png",
+]:
+  if os.path.exists(posible_nombre):
+    try:
+      if "Image" in locals():
+        icono_app = Image.open(posible_nombre)
+      else:
+        icono_app = posible_nombre
+    except Exception:
+      icono_app = posible_nombre
+    break
+
 st.set_page_config(
     page_title="Laboratorio Archipiélago - Asistente",
-    page_icon="🧪",
+    page_icon=icono_app,
     layout="centered",  # Interfaz limpia y centrada
 )
 
@@ -36,7 +56,7 @@ if "usuario_actual" not in st.session_state:
 if "mostrar_panel_img" not in st.session_state:
   st.session_state.mostrar_panel_img = False
 
-# --- Estilos CSS Minimalistas, Contraste Permanente y Casillas Blindadas ---
+# --- Estilos CSS Minimalistas, Texto Responsivo para Móvil y Contraste ---
 st.markdown(
     """
     <style>
@@ -51,16 +71,18 @@ st.markdown(
         color: #ffffff !important;
     }
 
-    /* Título principal centrado */
+    /* TÍTULO PRINCIPAL ADAPTADO A PANTALLAS DE CELULAR */
     .title-text {
         color: #ffffff !important;
         text-align: center;
         font-weight: 800;
-        font-size: 2.2rem;
-        white-space: nowrap;
+        font-size: clamp(1.6rem, 6.5vw, 2.2rem) !important; /* Se ajusta solo al ancho de pantalla */
+        white-space: normal !important; /* Permite bajar a segunda línea si el teléfono es angosto */
+        line-height: 1.25 !important;
         margin-top: 5px;
         margin-bottom: 25px;
         width: 100%;
+        padding: 0 10px;
     }
 
     /* CONTENEDOR BLANCO UNIFICADO PARA USUARIO, CONTRASEÑA Y BÚSQUEDA */
@@ -229,7 +251,7 @@ st.markdown(
 )
 
 
-# --- Función para convertir imagen local en Base64 para enlace clickeable ---
+# --- Función para convertir imagen local en Base64 para enlaces o íconos ---
 def obtener_img_base64(ruta_imagen):
   with open(ruta_imagen, "rb") as f:
     return base64.b64encode(f.read()).decode()
@@ -251,7 +273,7 @@ if st.session_state.autenticado:
       st.session_state.usuario_actual = ""
       st.rerun()
 
-# --- Logo Clickeable (Sin botones ni textos debajo) ---
+# --- Logo Clickeable e inyección de íconos móviles PWA ---
 logo_encontrado = None
 for posible_nombre in ["logo lab.webp", "logo lab.png", "logo.webp", "logo.png"]:
   if os.path.exists(posible_nombre):
@@ -261,20 +283,26 @@ for posible_nombre in ["logo lab.webp", "logo lab.png", "logo.webp", "logo.png"]
 if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
   mime = "image/webp" if logo_encontrado.endswith(".webp") else "image/png"
-  logo_html = f"""
+
+  # Inyección de metadatos para que el móvil reconozca el logo al agregar a pantalla principal
+  meta_iconos_html = f"""
+    <head>
+        <link rel="shortcut icon" href="data:{mime};base64,{img_b64}">
+        <link rel="apple-touch-icon" href="data:{mime};base64,{img_b64}">
+    </head>
     <div style="text-align: center; margin-bottom: 5px;">
         <a href="." target="_self" title="Haz clic en el logo para volver a empezar">
             <img src="data:{mime};base64,{img_b64}" style="width: 140px; max-width: 80%; height: auto; cursor: pointer; border: none;">
         </a>
     </div>
     """
-  st.markdown(logo_html, unsafe_allow_html=True)
+  st.markdown(meta_iconos_html, unsafe_allow_html=True)
 else:
   st.warning(
       "⚠️ Recuerda guardar tu archivo como **logo lab.webp** en la carpeta."
   )
 
-# Título Limpio
+# Título Limpio y Adaptable
 st.markdown(
     '<h1 class="title-text">Laboratorio Archipiélago</h1>',
     unsafe_allow_html=True,
@@ -290,7 +318,7 @@ if not st.session_state.autenticado:
       unsafe_allow_html=True,
   )
 
-  col_vacia1, col_login, col_vacia2 = st.columns([0.5, 2, 0.5])
+  col_vacia1, col_login, col_vacia2 = st.columns([0.2, 2.6, 0.2])
   with col_login:
     with st.form("form_login", clear_on_submit=False):
       usuario_input = st.text_input(
@@ -321,7 +349,7 @@ if not st.session_state.autenticado:
 # ==============================================================================
 
 # --- Barra de búsqueda + Botón Símbolo "Más" (Estilo Gemini) ---
-col_mas, col_input = st.columns([0.12, 0.88])
+col_mas, col_input = st.columns([0.16, 0.84])
 
 with col_mas:
   if st.button(
