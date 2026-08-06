@@ -19,7 +19,7 @@ except ImportError:
 icono_app = "🧪"
 logo_encontrado = None
 
-# Priorizar versión PNG para máxima compatibilidad con Android PWA
+# Priorizar versión PNG para máxima compatibilidad con Android PWA / APK
 for posible_nombre in [
     "logo lab.png",
     "logo.png",
@@ -68,6 +68,12 @@ st.markdown(
     .stApp {
         background-color: #6a1b29;
         color: #ffffff;
+    }
+
+    /* BLOQUEAR RECARGA ACCIDENTAL AL DESLIZAR HACIA ABAJO (PULL-TO-REFRESH) */
+    html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        overscroll-behavior-y: none !important;
+        overscroll-behavior: none !important;
     }
 
     /* Ocultar mensaje por defecto "Press Enter to apply / submit form" */
@@ -282,12 +288,11 @@ if st.session_state.autenticado:
       st.session_state.usuario_actual = ""
       st.rerun()
 
-# --- Logo Clickeable e inyección de íconos móviles PNG PWA ---
+# --- Logo Clickeable e inyección de íconos PWA ---
 if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
   mime = "image/png" if logo_encontrado.endswith(".png") else "image/webp"
 
-  # Inyección de metadatos para Android (192x192 / 512x512) y Apple
   meta_iconos_html = f"""
     <head>
         <link rel="shortcut icon" href="data:{mime};base64,{img_b64}">
