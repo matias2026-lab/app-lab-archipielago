@@ -14,16 +14,20 @@ except ImportError:
   OCR_DISPONIBLE = False
 
 # ==============================================================================
-# 🌟 CONFIGURACIÓN DE PÁGINA E ÍCONO OFICIAL ("logo lab.webp")
+# 🌟 CONFIGURACIÓN DE PÁGINA E ÍCONO OFICIAL ("logo lab.png" prioritario)
 # ==============================================================================
 icono_app = "🧪"
+logo_encontrado = None
+
+# Priorizar versión PNG para máxima compatibilidad con Android PWA
 for posible_nombre in [
-    "logo lab.webp",
     "logo lab.png",
-    "logo.webp",
     "logo.png",
+    "logo lab.webp",
+    "logo.webp",
 ]:
   if os.path.exists(posible_nombre):
+    logo_encontrado = posible_nombre
     try:
       if "Image" in locals():
         icono_app = Image.open(posible_nombre)
@@ -34,7 +38,7 @@ for posible_nombre in [
     break
 
 st.set_page_config(
-    page_title="Laboratorio Archipiélago - Asistente",
+    page_title="Lab Archipiélago",
     page_icon=icono_app,
     layout="centered",  # Interfaz limpia y centrada
 )
@@ -65,6 +69,15 @@ st.markdown(
         background-color: #6a1b29;
         color: #ffffff;
     }
+
+    /* Ocultar mensaje por defecto "Press Enter to apply / submit form" */
+    div[data-testid="InputInstructions"], 
+    div[data-testid="stInputInstructions"],
+    div[class*="InputInstructions"],
+    div[data-testid="stTextInput"] small {
+        display: none !important;
+        visibility: hidden !important;
+    }
     
     /* Textos generales en blanco */
     .stMarkdown, p, h1, h2, h3, h4, span, label {
@@ -76,8 +89,8 @@ st.markdown(
         color: #ffffff !important;
         text-align: center;
         font-weight: 800;
-        font-size: clamp(1.6rem, 6.5vw, 2.2rem) !important; /* Se ajusta solo al ancho de pantalla */
-        white-space: normal !important; /* Permite bajar a segunda línea si el teléfono es angosto */
+        font-size: clamp(1.6rem, 6.5vw, 2.2rem) !important;
+        white-space: normal !important;
         line-height: 1.25 !important;
         margin-top: 5px;
         margin-bottom: 25px;
@@ -108,7 +121,7 @@ st.markdown(
         -webkit-text-fill-color: #666666 !important;
     }
 
-    /* PROTEGER EL BOTÓN DEL OJITO EN LA CONTRASEÑA PARA QUE NO SE DEFORME */
+    /* PROTEGER EL BOTÓN DEL OJITO EN LA CONTRASEÑA */
     div[data-baseweb="input"] button, div[data-testid="stTextInput"] button {
         background-color: transparent !important;
         color: #333333 !important;
@@ -120,9 +133,7 @@ st.markdown(
         margin: 0 !important;
     }
 
-    /* ==========================================================================
-       ESTILO PERMANENTE PARA BOTONES DE ACCIÓN ("Cerrar Sesión", "Iniciar Sesión")
-       ========================================================================== */
+    /* BOTONES DE ACCIÓN ("Cerrar Sesión", "Iniciar Sesión") */
     div[data-testid="stFormSubmitButton"] > button,
     div[data-testid="stButton"] > button[kind="primary"],
     button[kind="primary"],
@@ -150,9 +161,7 @@ st.markdown(
         -webkit-text-fill-color: #ffffff !important;
     }
 
-    /* ==========================================================================
-       ESTILO EXCLUSIVO PARA EL BOTÓN "+" (Estilo redondo blanco tipo Gemini)
-       ========================================================================== */
+    /* BOTÓN "+" ESTILO GEMINI */
     div[data-testid="stButton"] > button[kind="secondary"],
     button[kind="secondary"],
     button[data-testid="baseButton-secondary"] {
@@ -179,7 +188,7 @@ st.markdown(
         transform: scale(1.05);
     }
 
-    /* CORRECCIÓN DE CONTRASTE: Cargador de Archivos (Upload) en negro y gris oscuro */
+    /* CARGADOR DE ARCHIVOS */
     [data-testid="stFileUploader"] section {
         background-color: #f8f9fa !important;
         border: 2px dashed #6a1b29 !important;
@@ -200,7 +209,7 @@ st.markdown(
         color: #333333 !important;
     }
 
-    /* RECUADRO BLANCO para resultados */
+    /* RECUADRO BLANCO DE RESULTADOS */
     .card-box {
         background-color: #ffffff !important;
         color: #1a1a1a !important;
@@ -228,7 +237,7 @@ st.markdown(
         font-weight: 500;
     }
 
-    /* Panel del botón "+" */
+    /* PANEL DEL BOTÓN "+" */
     .panel-img {
         background-color: rgba(255, 255, 255, 0.1);
         padding: 15px;
@@ -237,7 +246,7 @@ st.markdown(
         border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
-    /* Formato de alertas legibles */
+    /* ALERTAS */
     .stAlert {
         border-radius: 10px !important;
     }
@@ -251,14 +260,14 @@ st.markdown(
 )
 
 
-# --- Función para convertir imagen local en Base64 para enlaces o íconos ---
+# --- Función para convertir imagen local en Base64 ---
 def obtener_img_base64(ruta_imagen):
   with open(ruta_imagen, "rb") as f:
     return base64.b64encode(f.read()).decode()
 
 
 # ==============================================================================
-# 🚪 BOTÓN CERRAR SESIÓN EN LA ESQUINA SUPERIOR IZQUIERDA (SOLO SI AUTENTICADO)
+# 🚪 BOTÓN CERRAR SESIÓN EN LA ESQUINA SUPERIOR IZQUIERDA
 # ==============================================================================
 if st.session_state.autenticado:
   col_logout, col_resto = st.columns([1.2, 3.8])
@@ -273,22 +282,18 @@ if st.session_state.autenticado:
       st.session_state.usuario_actual = ""
       st.rerun()
 
-# --- Logo Clickeable e inyección de íconos móviles PWA ---
-logo_encontrado = None
-for posible_nombre in ["logo lab.webp", "logo lab.png", "logo.webp", "logo.png"]:
-  if os.path.exists(posible_nombre):
-    logo_encontrado = posible_nombre
-    break
-
+# --- Logo Clickeable e inyección de íconos móviles PNG PWA ---
 if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
-  mime = "image/webp" if logo_encontrado.endswith(".webp") else "image/png"
+  mime = "image/png" if logo_encontrado.endswith(".png") else "image/webp"
 
-  # Inyección de metadatos para que el móvil reconozca el logo al agregar a pantalla principal
+  # Inyección de metadatos para Android (192x192 / 512x512) y Apple
   meta_iconos_html = f"""
     <head>
         <link rel="shortcut icon" href="data:{mime};base64,{img_b64}">
         <link rel="apple-touch-icon" href="data:{mime};base64,{img_b64}">
+        <link rel="icon" type="{mime}" sizes="192x192" href="data:{mime};base64,{img_b64}">
+        <link rel="icon" type="{mime}" sizes="512x512" href="data:{mime};base64,{img_b64}">
     </head>
     <div style="text-align: center; margin-bottom: 5px;">
         <a href="." target="_self" title="Haz clic en el logo para volver a empezar">
@@ -299,7 +304,8 @@ if logo_encontrado:
   st.markdown(meta_iconos_html, unsafe_allow_html=True)
 else:
   st.warning(
-      "⚠️ Recuerda guardar tu archivo como **logo lab.webp** en la carpeta."
+      "⚠️ Recuerda guardar tu archivo como **logo lab.png** en la carpeta del"
+      " proyecto."
   )
 
 # Título Limpio y Adaptable
@@ -596,11 +602,10 @@ if texto_a_buscar:
     terminos_examen = palabras
     filtros_especificos = []
 
-  # Si la búsqueda proviene de una foto (muchas palabras), busca coincidencia parcial
   def coincide_examen(fila):
     texto_fila = " ".join([str(val) for val in fila.values])
     texto_fila_norm = normalizar(texto_fila)
-    if len(terminos_examen) > 3:  # Caso OCR de orden o pantalla
+    if len(terminos_examen) > 3:
       return any(
           term in texto_fila_norm for term in terminos_examen if len(term) > 3
       )
