@@ -3,6 +3,7 @@ import os
 import unicodedata
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 # Intentar importar librerías para lectura de imágenes (OCR)
 try:
@@ -44,30 +45,47 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 🛡️ ESTRATEGIA 1: BLOQUEO DE PULL-TO-REFRESH MEDIANTE JAVASCRIPT
+# 🛡️ ESTRATEGIA DE EXPERTO 1 & 2: INYECCIÓN JS EN EL DOM PADRE PARA BLOQUEAR RECARGA
 # ==============================================================================
-st.markdown(
+components.html(
     """
     <script>
-    document.addEventListener('DOMContentLoaded', (event) => {
-        let touchstartY = 0;
-        document.addEventListener('touchstart', e => {
-            touchstartY = e.touches[0].clientY;
-        }, {passive: false});
-
-        document.addEventListener('touchmove', e => {
-            let touchmoveY = e.touches[0].clientY;
-            let scrollTop = document.scrollingElement.scrollTop || document.documentElement.scrollTop;
-            
-            // Si el scroll está en el techo y el usuario arrastra hacia abajo, se cancela el gesto del sistema
-            if (scrollTop === 0 && touchmoveY > touchstartY) {
+    try {
+        const win = window.parent;
+        const doc = win.document;
+        
+        // 1. Bloquear comportamiento de rebote en el documento principal del teléfono
+        doc.documentElement.style.overscrollBehavior = 'none';
+        doc.body.style.overscrollBehavior = 'none';
+        
+        // 2. Aplicar touch-action al contenedor principal de Streamlit
+        const container = doc.querySelector('[data-testid="stAppViewContainer"]');
+        if (container) {
+            container.style.overscrollBehavior = 'none';
+            container.style.touchAction = 'pan-x pan-y';
+        }
+        
+        // 3. Interceptar arrastre superior en el tope para evitar que Android recargue la app
+        let touchStartY = 0;
+        doc.addEventListener('touchstart', function(e) {
+            touchStartY = e.touches[0].clientY;
+        }, { passive: false });
+        
+        doc.addEventListener('touchmove', function(e) {
+            const moveY = e.touches[0].clientY;
+            const scrollTop = container ? container.scrollTop : doc.documentElement.scrollTop;
+            // Si está arriba del todo y el usuario arrastra hacia abajo, cancelar el evento de recarga
+            if (scrollTop <= 2 && moveY > touchStartY && (moveY - touchStartY) > 10) {
                 e.preventDefault();
             }
-        }, {passive: false});
-    });
+        }, { passive: false });
+    } catch(e) {
+        console.log("Error configurando overscroll:", e);
+    }
     </script>
     """,
-    unsafe_allow_html=True,
+    height=0,
+    width=0,
 )
 
 # ==============================================================================
@@ -88,7 +106,7 @@ if "mostrar_panel_img" not in st.session_state:
   st.session_state.mostrar_panel_img = False
 
 # ==============================================================================
-# 🛡️ ESTRATEGIA 2: PERSISTENCIA DE SESIÓN MEDIANTE PARÁMETROS EN LA URL
+# 🛡️ ESTRATEGIA DE EXPERTO 3: PERSISTENCIA DE SESIÓN VÍA PARÁMETROS DE URL
 # ==============================================================================
 params = st.query_params
 if "auth_token" in params and params["auth_token"] in USUARIOS:
@@ -105,10 +123,21 @@ st.markdown(
         color: #ffffff;
     }
 
-    /* BLOQUEAR RECARGA ACCIDENTAL AL DESLIZAR HACIA ABAJO (PULL-TO-REFRESH) */
-    html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    /* BLOQUEO TOTAL DE PULL-TO-REFRESH Y GESTOS DE REBOTE EN MÓVIL */
+    html, body, .stApp, [data-testid="stAppViewContainer"], section.main {
         overscroll-behavior-y: none !important;
         overscroll-behavior: none !important;
+        touch-action: pan-x pan-y !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* NEUTRALIZAR LA BARRA SUPERIOR BLANCA DE STREAMLIT PARA QUE NO ATRAPE EL TOQUE */
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+        height: 0px !important;
+        min-height: 0px !important;
+        pointer-events: none !important;
+        z-index: 0 !important;
     }
 
     /* Ocultar mensaje por defecto "Press Enter to apply / submit form" */
@@ -459,7 +488,6 @@ st.divider()
 ARCHIVO_EXCEL = "APP lab archipielago 2.xlsx"
 
 
-# CORRECCIÓN: Se elimina 'mtime' como parámetro de entrada para evitar el error 'Unhashable Param'
 @st.cache_data(ttl=2)
 def cargar_y_unificar_datos(ruta_archivo):
   if not os.path.exists(ruta_archivo):
