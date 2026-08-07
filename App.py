@@ -3,7 +3,6 @@ import os
 import unicodedata
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 # Intentar importar librerías para lectura de imágenes (OCR)
 try:
@@ -45,50 +44,6 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 🛡️ ESTRATEGIA DE EXPERTO 1 & 2: INYECCIÓN JS EN EL DOM PADRE PARA BLOQUEAR RECARGA
-# ==============================================================================
-components.html(
-    """
-    <script>
-    try {
-        const win = window.parent;
-        const doc = win.document;
-        
-        // 1. Bloquear comportamiento de rebote en el documento principal del teléfono
-        doc.documentElement.style.overscrollBehavior = 'none';
-        doc.body.style.overscrollBehavior = 'none';
-        
-        // 2. Aplicar touch-action al contenedor principal de Streamlit
-        const container = doc.querySelector('[data-testid="stAppViewContainer"]');
-        if (container) {
-            container.style.overscrollBehavior = 'none';
-            container.style.touchAction = 'pan-x pan-y';
-        }
-        
-        // 3. Interceptar arrastre superior en el tope para evitar que Android recargue la app
-        let touchStartY = 0;
-        doc.addEventListener('touchstart', function(e) {
-            touchStartY = e.touches[0].clientY;
-        }, { passive: false });
-        
-        doc.addEventListener('touchmove', function(e) {
-            const moveY = e.touches[0].clientY;
-            const scrollTop = container ? container.scrollTop : doc.documentElement.scrollTop;
-            // Si está arriba del todo y el usuario arrastra hacia abajo, cancelar el evento de recarga
-            if (scrollTop <= 2 && moveY > touchStartY && (moveY - touchStartY) > 10) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-    } catch(e) {
-        console.log("Error configurando overscroll:", e);
-    }
-    </script>
-    """,
-    height=0,
-    width=0,
-)
-
-# ==============================================================================
 # 🔐 CONFIGURACIÓN DE USUARIOS Y CONTRASEÑAS
 # ==============================================================================
 USUARIOS = {
@@ -106,7 +61,7 @@ if "mostrar_panel_img" not in st.session_state:
   st.session_state.mostrar_panel_img = False
 
 # ==============================================================================
-# 🛡️ ESTRATEGIA DE EXPERTO 3: PERSISTENCIA DE SESIÓN VÍA PARÁMETROS DE URL
+# 🛡️ PERSISTENCIA DE SESIÓN VÍA PARÁMETROS DE URL (BLINDAJE ANTI-CIERRES)
 # ==============================================================================
 params = st.query_params
 if "auth_token" in params and params["auth_token"] in USUARIOS:
@@ -117,21 +72,44 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
 st.markdown(
     """
     <style>
-    /* Fondo burdeo corporativo */
-    .stApp {
-        background-color: #6a1b29;
-        color: #ffffff;
-    }
-
-    /* BLOQUEO TOTAL DE PULL-TO-REFRESH Y GESTOS DE REBOTE EN MÓVIL */
-    html, body, .stApp, [data-testid="stAppViewContainer"], section.main {
-        overscroll-behavior-y: none !important;
+    /* ==========================================================================
+       🛡️ ARQUITECTURA SENIOR PWA: CONTENEDOR FIJO CON SCROLL AISLADO
+       ========================================================================== */
+    /* 1. Bloquear la raíz: html y body se vuelven un marco inmóvil */
+    html, body, #root {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
         overscroll-behavior: none !important;
-        touch-action: pan-x pan-y !important;
-        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-y: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    /* NEUTRALIZAR LA BARRA SUPERIOR BLANCA DE STREAMLIT PARA QUE NO ATRAPE EL TOQUE */
+    /* 2. El contenedor interno de Streamlit es el ÚNICO con permiso para desplazarse */
+    [data-testid="stAppViewContainer"] {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        overscroll-behavior: contain !important;
+        overscroll-behavior-y: contain !important;
+        -webkit-overflow-scrolling: touch !important;
+        background-color: #6a1b29 !important;
+    }
+
+    /* 3. Evitar que cualquier elemento propague el rebote hacia el sistema operativo */
+    * {
+        overscroll-behavior: contain !important;
+    }
+
+    /* NEUTRALIZAR LA BARRA SUPERIOR BLANCA DE STREAMLIT */
     [data-testid="stHeader"] {
         background-color: transparent !important;
         height: 0px !important;
