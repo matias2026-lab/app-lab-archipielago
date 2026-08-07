@@ -44,6 +44,33 @@ st.set_page_config(
 )
 
 # ==============================================================================
+# 🛡️ ESTRATEGIA 1: BLOQUEO DE PULL-TO-REFRESH MEDIANTE JAVASCRIPT
+# ==============================================================================
+st.markdown(
+    """
+    <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        let touchstartY = 0;
+        document.addEventListener('touchstart', e => {
+            touchstartY = e.touches[0].clientY;
+        }, {passive: false});
+
+        document.addEventListener('touchmove', e => {
+            let touchmoveY = e.touches[0].clientY;
+            let scrollTop = document.scrollingElement.scrollTop || document.documentElement.scrollTop;
+            
+            // Si el scroll está en el techo y el usuario arrastra hacia abajo, se cancela el gesto del sistema
+            if (scrollTop === 0 && touchmoveY > touchstartY) {
+                e.preventDefault();
+            }
+        }, {passive: false});
+    });
+    </script>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ==============================================================================
 # 🔐 CONFIGURACIÓN DE USUARIOS Y CONTRASEÑAS
 # ==============================================================================
 USUARIOS = {
@@ -59,6 +86,14 @@ if "usuario_actual" not in st.session_state:
   st.session_state.usuario_actual = ""
 if "mostrar_panel_img" not in st.session_state:
   st.session_state.mostrar_panel_img = False
+
+# ==============================================================================
+# 🛡️ ESTRATEGIA 2: PERSISTENCIA DE SESIÓN MEDIANTE PARÁMETROS EN LA URL
+# ==============================================================================
+params = st.query_params
+if "auth_token" in params and params["auth_token"] in USUARIOS:
+  st.session_state.autenticado = True
+  st.session_state.usuario_actual = params["auth_token"]
 
 # --- Estilos CSS Minimalistas, Texto Responsivo para Móvil y Contraste ---
 st.markdown(
@@ -286,6 +321,7 @@ if st.session_state.autenticado:
     ):
       st.session_state.autenticado = False
       st.session_state.usuario_actual = ""
+      st.query_params.clear()  # Borra el token persistente de la URL
       st.rerun()
 
 # --- Logo Clickeable e inyección de íconos PWA ---
@@ -347,6 +383,8 @@ if not st.session_state.autenticado:
         ):
           st.session_state.autenticado = True
           st.session_state.usuario_actual = usuario_input
+          # 🛡️ Guardar token seguro en URL para persistir ante recargas
+          st.query_params["auth_token"] = usuario_input
           st.success("✅ Acceso correcto.")
           st.rerun()
         else:
@@ -421,8 +459,9 @@ st.divider()
 ARCHIVO_EXCEL = "APP lab archipielago 2.xlsx"
 
 
+# CORRECCIÓN: Se elimina 'mtime' como parámetro de entrada para evitar el error 'Unhashable Param'
 @st.cache_data(ttl=2)
-def cargar_y_unificar_datos(ruta_archivo, mtime):
+def cargar_y_unificar_datos(ruta_archivo):
   if not os.path.exists(ruta_archivo):
     return None
   try:
@@ -438,10 +477,7 @@ def cargar_y_unificar_datos(ruta_archivo, mtime):
     return None
 
 
-tiempo_modificacion = (
-    os.path.getmtime(ARCHIVO_EXCEL) if os.path.exists(ARCHIVO_EXCEL) else 0
-)
-df_datos = cargar_y_unificar_datos(ARCHIVO_EXCEL, tiempo_modificacion)
+df_datos = cargar_y_unificar_datos(ARCHIVO_EXCEL)
 
 if df_datos is None:
   st.error(
