@@ -50,13 +50,12 @@ for posible_nombre in ["logo lab.png", "logo.png", "logo lab.webp", "logo.webp"]
 # TU ENLACE OFICIAL DE GOOGLE SHEETS
 URL_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1fIS5shJvhrynJ6v7Z5jQZpUkIq6kQEPr4gn2sza9ylY/edit?gid=764153428#gid=764153428"
 
-
 st.set_page_config(
     page_title="Lab Archipiélago", page_icon=icono_app, layout="centered"
 )
 
 # ==============================================================================
-# 🔐 CONFIGURACIÓN DE USUARIOS Y CONTRASEÑAS (Definición rápida)
+# 🔐 CONFIGURACIÓN DE USUARIOS Y CONTRASEÑAS
 # ==============================================================================
 USUARIOS = {
     "recepcion": "lab2026",
@@ -69,14 +68,13 @@ if "autenticado" not in st.session_state:
 if "usuario_actual" not in st.session_state:
   st.session_state.usuario_actual = ""
 
-# Lógica para auth vía URL (params) - Trazabilidad PWA
 params = st.query_params
 if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.autenticado = True
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PROFESIONALES Y OCULTACIÓN DE BRANDING (Try/Catch UX)
+# 🎨 ESTILOS CSS PROFESIONALES Y OCULTACIÓN DE BRANDING
 # ==============================================================================
 st.markdown(
     """
@@ -91,48 +89,35 @@ st.markdown(
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
     /* -------------------------------------------------------------------------- */
-    /* 🚫 OCULTAR ELEMENTOS DE PLATAFORMA STREAMLIT (Círculo amarillo de imagen) */
+    /* 🚫 OCULTAR ELEMENTOS DE PLATAFORMA STREAMLIT (Marcas de agua) */
     /* -------------------------------------------------------------------------- */
-    
-    /* Ocultar el footer "Made with Streamlit" */
     footer {display: none !important;}
-    
-    /* Ocultar el menú de hamburguesa original (arriba a la derecha) */
     #MainMenu {visibility: hidden !important;}
-    
-    /* Ocultar el header superior de administración (Manage app, etc) */
     header {visibility: hidden !important;}
-    
-    /* Ocultar botones de acción/despliegue de la plataforma */
     .stActionButton {display: none !important;}
     .stDeployButton {display: none !important;}
 
     /* -------------------------------------------------------------------------- */
     /* 🍔 DISEÑO DEL BOTÓN DE MENÚ HAMBURGUESA PERSONALIZADO (FUERZA BRUTA UX) */
     /* -------------------------------------------------------------------------- */
-    
-    /* Permitir que el header superior exista pero sea transparente para nuestro botón */
     [data-testid="stHeader"] { 
         background-color: transparent !important; 
-        visibility: visible !important; /* Re-habilitamos visibilidad solo para el contenedor */
+        visibility: visible !important; 
     }
     
-    /* ESTILO 1: BOTÓN DE MENÚ MÓVIL NATIVO (Selector Directo) */
+    /* ESTILO 1: BOTÓN DE MENÚ MÓVIL NATIVO */
     [data-testid="stHeader"] button {
         background-color: #48121b !important;
         border-radius: 12px !important;
         width: 60px !important;
         height: 60px !important;
-        margin-top: 35px !important;  /* 📏 Más alejado del tope de la pantalla (UX Táctil) */
-        margin-left: 20px !important; /* 📏 Más alejado de la orilla */
+        margin-top: 35px !important;
+        margin-left: 20px !important; 
         box-shadow: 2px 2px 10px rgba(0,0,0,0.5) !important;
         pointer-events: auto !important; 
         z-index: 999999 !important;
     }
-    [data-testid="stHeader"] button svg {
-        display: none !important; /* Oculta el ícono de flecha predeterminado */
-    }
-    /* Dibujamos el icono '☰' */
+    [data-testid="stHeader"] button svg { display: none !important; }
     [data-testid="stHeader"] button::after {
         content: "☰" !important;
         color: #ffffff !important;
@@ -143,21 +128,19 @@ st.markdown(
         transform: translate(-50%, -55%) !important;
     }
 
-    /* ESTILO 2: BOTÓN DE MENÚ EN TABLET/ESCRITORIO (CollapsedControl) */
+    /* ESTILO 2: BOTÓN DE MENÚ EN TABLET/ESCRITORIO */
     [data-testid="collapsedControl"] {
         background-color: #48121b !important;
         border-radius: 12px !important;
         width: 60px !important;
         height: 60px !important;
-        top: 45px !important;  /* 📏 Aún más alejado del tope de la pantalla */
+        top: 45px !important;
         left: 20px !important;
         box-shadow: 2px 2px 10px rgba(0,0,0,0.5) !important;
         z-index: 999999 !important;
-        visibility: visible !important; /* Asegurar visibilidad */
+        visibility: visible !important; 
     }
-    [data-testid="collapsedControl"] svg {
-        display: none !important;
-    }
+    [data-testid="collapsedControl"] svg { display: none !important; }
     [data-testid="collapsedControl"]::after {
         content: "☰" !important;
         color: #ffffff !important;
@@ -170,11 +153,11 @@ st.markdown(
     
     /* -------------------------------------------------------------------------- */
     
-    /*Sidebar fondo institucional */
+    /* Sidebar fondo institucional */
     [data-testid="stSidebar"] { background-color: #48121b !important; border-right: 1px solid rgba(255,255,255,0.1); }
     [data-testid="stSidebarNav"] { display: none !important; }
     
-    /* Buscador fijo en el techo (Patrón de diseño móvil) */
+    /* Buscador fijo en el techo */
     div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stTextInput"]) { position: -webkit-sticky !important; position: sticky !important; top: 10px !important; z-index: 9999 !important; background-color: #6a1b29 !important; padding: 10px 5px !important; border-radius: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important; }
 
     div[data-baseweb="input"], div[data-baseweb="base-input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; }
@@ -182,18 +165,14 @@ st.markdown(
     
     div[data-testid="stFormSubmitButton"] > button, div[data-testid="stButton"] > button[kind="primary"] { background-color: #48121b !important; color: #ffffff !important; border-radius: 10px !important; font-weight: 600 !important; width: 100% !important; border: 1px solid rgba(255, 255, 255, 0.35) !important;}
     
-    /* Paneles visuales */
+    /* Paneles y Cartas */
     .panel-img { background-color: rgba(255, 255, 255, 0.12); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255, 255, 255, 0.3); }
-
-    /* Cartas de resultados (Tema claro sobre fondo oscuro) */
     .card-box { background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 25px; border-radius: 12px; border-left: 8px solid #d4af37; margin-bottom: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); }
-    .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; }
+    .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; border-radius: 6px; padding: 2px 4px;}
     .col-name { font-weight: 700; color: #6a1b29 !important; }
     .col-val { color: #222222 !important; font-weight: 500; }
 
-    /* --------------------------------------------------- */
-    /* 🔴 LÍNEA LÁSER ROJA ANIMADA PARA LA CÁMARA (UX Móvil) */
-    /* --------------------------------------------------- */
+    /* 🔴 LÍNEA LÁSER ROJA ANIMADA PARA LA CÁMARA */
     div[data-testid="stCameraInput"] {
         position: relative;
         overflow: hidden;
@@ -224,7 +203,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 def obtener_img_base64(ruta_imagen):
   with open(ruta_imagen, "rb") as f:
     return base64.b64encode(f.read()).decode()
@@ -242,7 +220,7 @@ if logo_encontrado:
 st.markdown('<h1 class="title-text">Laboratorio Archipiélago</h1>', unsafe_allow_html=True)
 
 # ==============================================================================
-# 🔐 LOGIN DE ACCESO (PROTECCIÓN DE RUTAS)
+# 🔐 LOGIN DE ACCESO
 # ==============================================================================
 if not st.session_state.autenticado:
   st.markdown("<h3 style='text-align: center;'>Acceso Restringido para Personal</h3>", unsafe_allow_html=True)
@@ -255,41 +233,32 @@ if not st.session_state.autenticado:
         if usuario_input in USUARIOS and USUARIOS[usuario_input] == clave_input:
           st.session_state.autenticado = True
           st.session_state.usuario_actual = usuario_input
-          # st.query_params["auth_token"] = usuario_input # Opcional: Guardar en URL
           st.rerun()
         else:
           st.error("❌ Credenciales incorrectas.")
   st.stop()
 
-
 # ==============================================================================
-# ☰ MENÚ LATERAL (SIDEBAR) CONTENIDO
+# ☰ MENÚ LATERAL
 # ==============================================================================
 with st.sidebar:
   st.markdown("### ⚙️ Menú de Herramientas")
   st.divider()
   
-  # Selector de módulos (Navegación Defensiva Try/Catch)
   modulo_activo = st.radio(
       "Selecciona un módulo:",
-      [
-          "Buscador de Exámenes",
-          "Órdenes y Comprobantes",
-          "Escáner de Inventario",
-      ],
+      ["Buscador de Exámenes", "Órdenes y Comprobantes", "Escáner de Inventario"],
       label_visibility="collapsed"
   )
   
   st.divider()
   st.markdown(f"**Usuario:** {st.session_state.usuario_actual.upper()}")
   
-  # Botón Cerrar Sesión
   if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
     st.session_state.autenticado = False
     st.session_state.usuario_actual = ""
     st.query_params.clear()
     st.rerun()
-
 
 # ==============================================================================
 # 📂 CARGA DE DATOS (EXCEL LOCAL)
@@ -306,30 +275,26 @@ def cargar_y_unificar_datos(ruta_archivo):
         df.dropna(how="all").rename(columns=lambda c: str(c).strip())
         for _, df in dict_hojas.items()
     ]
-    # Retornamos el DataFrame unificado (No normalizado por defecto para Trazabilidad)
     return pd.concat(lista_dfs, ignore_index=True).fillna("")
   except Exception:
     return None
 
 df_datos = cargar_y_unificar_datos(ARCHIVO_EXCEL)
 
-# Función de normalización de texto para búsqueda (Ingeniería de Software)
 def normalizar(texto):
   if pd.isna(texto):
     return ""
   return "".join([
-      c
-      for c in unicodedata.normalize("NFKD", str(texto).lower())
+      c for c in unicodedata.normalize("NFKD", str(texto).lower())
       if not unicodedata.combining(c)
   ])
-
 
 # ==============================================================================
 # 🔓 RUTEO DE PANTALLAS (LÓGICA DEL MENÚ)
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# MÓDULO 1: BUSCADOR DE EXÁMENES
+# MÓDULO 1: BUSCADOR DE EXÁMENES (AHORA CON BÚSQUEDA OMNIDIRECCIONAL)
 # ------------------------------------------------------------------------------
 if modulo_activo == "Buscador de Exámenes":
   
@@ -345,23 +310,38 @@ if modulo_activo == "Buscador de Exámenes":
     palabras = [p for p in normalizar(consulta).split() if p]
 
     def coincide_examen(fila):
-      return all(
-          term in normalizar(" ".join([str(v) for v in fila.values]))
-          for term in palabras
-      )
+      # 💡 EL TRUCO ESTÁ AQUÍ: Une los NOMBRES DE LAS COLUMNAS y los VALORES en un solo texto gigante.
+      texto_fila = normalizar(" ".join([str(c) for c in fila.index] + [str(v) for v in fila.values]))
+      # Si todas las palabras de búsqueda están en ese texto gigante, la fila coincide.
+      return all(term in texto_fila for term in palabras)
 
     df_resultados = df_datos[df_datos.apply(coincide_examen, axis=1)]
 
     if df_resultados.empty:
       st.warning(f"⚠️ No se encontró información para **'{consulta}'**.")
     else:
-      # Diseño defensivo: Trazabilidad de columnas dinámicas del Excel
-      for _, fila in df_resultados.iterrows():
+      # Lógica para proteger el celular de sobrecarga si buscan algo muy genérico como "precio"
+      cantidad_resultados = len(df_resultados)
+      resultados_mostrar = df_resultados.head(50)
+      
+      if cantidad_resultados > 50:
+          st.info(f"💡 Encontré {cantidad_resultados} resultados. Te muestro los primeros 50 para no saturar tu pantalla. ¡Sé un poco más específico!")
+
+      for _, fila in resultados_mostrar.iterrows():
         html_card = '<div class="card-box">'
         for col, val in fila.items():
           if str(val).strip():
+            
+            # ✨ RESALTADOR VISUAL INTELIGENTE ✨
+            # Si la columna o el valor contiene la palabra buscada, lo pintamos con un fondo sutil dorado.
+            col_norm = normalizar(str(col))
+            val_norm = normalizar(str(val))
+            es_buscado = any(term in col_norm or term in val_norm for term in palabras)
+            
+            estilo = "background-color: rgba(212, 175, 55, 0.15); border-left: 4px solid #d4af37;" if es_buscado else ""
+            
             html_card += (
-                f'<div class="row-item"><span class="col-name">{col}:</span>'
+                f'<div class="row-item" style="{estilo}"><span class="col-name">{col}:</span>'
                 f' <span class="col-val">{val}</span></div>'
             )
         st.markdown(html_card + "</div>", unsafe_allow_html=True)
@@ -381,10 +361,7 @@ elif modulo_activo == "Órdenes y Comprobantes":
 
   img_orden = None
   if "Galería" in opcion_img:
-    img_orden = st.file_uploader(
-        "Selecciona la foto de la orden o voucher",
-        type=["png", "jpg", "jpeg", "webp"],
-    )
+    img_orden = st.file_uploader("Selecciona la foto de la orden o voucher", type=["png", "jpg", "jpeg", "webp"])
   else:
     img_orden = st.camera_input("Fotografía la orden médica o comprobante")
 
@@ -394,7 +371,6 @@ elif modulo_activo == "Órdenes y Comprobantes":
         img_pil_orden = Image.open(img_orden)
         texto_ocr = pytesseract.image_to_string(img_pil_orden, lang="spa")
         st.success("✅ Imagen leída correctamente. Módulo de auditoría en preparación...")
-        # st.write(texto_ocr)
       except Exception:
         st.warning("⚠️ No se pudo extraer el texto de la imagen.")
     else:
@@ -403,7 +379,7 @@ elif modulo_activo == "Órdenes y Comprobantes":
   st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# MÓDULO 3: ESCÁNER DE INVENTARIO (GOOGLE SHEETS CON TRAZABILIDAD)
+# MÓDULO 3: ESCÁNER DE INVENTARIO
 # ------------------------------------------------------------------------------
 elif modulo_activo == "Escáner de Inventario":
   st.markdown("<h3 style='text-align: center;'>Escáner de Inventario</h3>", unsafe_allow_html=True)
@@ -411,11 +387,8 @@ elif modulo_activo == "Escáner de Inventario":
   area_destino = st.selectbox(
       "📥 Selecciona el área de destino del insumo:",
       [
-          "QUIMICA Y ELECTROLITOS",
-          "HORMONAS",
-          "HEMATOLOGIA Y COAGULACION",
-          "MICROBIOLOGIA,UROANALISIS,TEST",
-          "LABORATORIO, TOMA MX",
+          "QUIMICA Y ELECTROLITOS", "HORMONAS", "HEMATOLOGIA Y COAGULACION",
+          "MICROBIOLOGIA,UROANALISIS,TEST", "LABORATORIO, TOMA MX",
       ],
   )
 
@@ -434,7 +407,6 @@ elif modulo_activo == "Escáner de Inventario":
       else:
         for cod in codigos_detectados:
           texto_capturado = cod.data.decode("utf-8")
-          tipo_formato = cod.type
           fecha_hoy = date.today().strftime("%d/%m/%Y")
           usuario_logueado = st.session_state.usuario_actual.upper()
 
@@ -452,34 +424,25 @@ elif modulo_activo == "Escáner de Inventario":
               unsafe_allow_html=True,
           )
 
-          # BOTÓN PARA GUARDAR EN GOOGLE SHEETS (UX Táctil)
           if st.button("☁️ Guardar en Google Sheets", type="primary", use_container_width=True):
             if not CONEXION_GOOGLE_OK:
               st.error("❌ Falta configurar las librerías de Google en la nube.")
             else:
               with st.spinner("⏳ Analizando conexión y enviando datos..."):
-                  
-                  # Ingeniería Defensiva: Diagnóstico paso a paso
-                  
                   if "google_json" not in st.secrets:
                       st.error("🛑 DIAGNÓSTICO: No se encontró la llave 'google_json' en Streamlit secrets.")
                       st.stop()
                   
                   try:
-                      # 1. Autenticación en Google Cloud
                       scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
                       credenciales_dict = json.loads(st.secrets["google_json"])
                       creds = ServiceAccountCredentials.from_json_keyfile_dict(credenciales_dict, scope)
                       cliente = gspread.authorize(creds)
-
-                      # 2. Apertura del archivo principal (Por URL para trazabilidad infalible)
                       hoja_calculo = cliente.open_by_url(URL_GOOGLE_SHEETS)
                       
-                      # 3. Localización Defensiva de Pestañas (Evita SpreadsheetNotFound accidentales)
                       todas_las_pestañas = hoja_calculo.worksheets()
                       pestaña_objetivo = None
                       
-                      # Búsqueda inteligente (Ignora mayúsculas y espacios accidentales en el Excel)
                       for p in todas_las_pestañas:
                           if p.title.strip().upper() == area_destino.strip().upper():
                               pestaña_objetivo = p
@@ -488,19 +451,14 @@ elif modulo_activo == "Escáner de Inventario":
                       if pestaña_objetivo is None:
                           st.error(f"🛑 DIAGNÓSTICO: No se encontró la pestaña '{area_destino}' en el Excel.")
                       else:
-                          # 4. Inserción de Datos (Alineada con tu Excel local)
-                          # Estructura: Por asignar, Código, [vacio], NUEVO INGRESO, 1, Fecha, [vacio]x3, Usuario, Comentario, [vacio]x2
                           nueva_fila = [
                               "Por asignar", texto_capturado, "", "NUEVO INGRESO", 1,
                               fecha_hoy, "", "", "", usuario_logueado,
                               "Ingresado por App Móvil", "", ""
                           ]
-                          
                           pestaña_objetivo.append_row(nueva_fila)
-                          
-                          # 5. Feedback Visual Final (UX)
                           st.balloons()
-                          st.success(f"🎉 ¡ÉXITO TOTAL! Insumo '{texto_capturado}' guardado en la nube perfectamente.")
+                          st.success(f"🎉 ¡ÉXITO TOTAL! Insumo '{texto_capturado}' guardado en la nube.")
 
                   except json.JSONDecodeError:
                       st.error("🛑 DIAGNÓSTICO: La llave secreta en Streamlit no tiene formato JSON válido.")
