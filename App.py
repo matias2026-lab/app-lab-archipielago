@@ -56,7 +56,7 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 🔐 CONFIGURACIÓN DE USUARIOS Y CONTRASEÑAS
+# 🔐 CONFIGURACIÓN DE USUARIOS Y CONTRASEÑAS (Definición rápida)
 # ==============================================================================
 USUARIOS = {
     "recepcion": "lab2026",
@@ -69,18 +69,19 @@ if "autenticado" not in st.session_state:
 if "usuario_actual" not in st.session_state:
   st.session_state.usuario_actual = ""
 
+# Lógica para auth vía URL (params) - Trazabilidad PWA
 params = st.query_params
 if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.autenticado = True
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PROFESIONALES Y ARQUITECTURA PWA
+# 🎨 ESTILOS CSS PROFESIONALES Y OCULTACIÓN DE BRANDING (Try/Catch UX)
 # ==============================================================================
 st.markdown(
     """
     <style>
-    /* Arquitectura para bloqueo de recargas */
+    /* 1. Arquitectura para bloqueo de recargas y visualización PWA nativa */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     
@@ -90,28 +91,48 @@ st.markdown(
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
     /* -------------------------------------------------------------------------- */
-    /* 🍔 TRANSFORMACIÓN TOTAL DEL BOTÓN DE MENÚ (FUERZA BRUTA PARA MÓVIL Y TABLET) */
+    /* 🚫 OCULTAR ELEMENTOS DE PLATAFORMA STREAMLIT (Círculo amarillo de imagen) */
     /* -------------------------------------------------------------------------- */
     
-    /* Permitir que el header superior exista pero sea transparente */
+    /* Ocultar el footer "Made with Streamlit" */
+    footer {display: none !important;}
+    
+    /* Ocultar el menú de hamburguesa original (arriba a la derecha) */
+    #MainMenu {visibility: hidden !important;}
+    
+    /* Ocultar el header superior de administración (Manage app, etc) */
+    header {visibility: hidden !important;}
+    
+    /* Ocultar botones de acción/despliegue de la plataforma */
+    .stActionButton {display: none !important;}
+    .stDeployButton {display: none !important;}
+
+    /* -------------------------------------------------------------------------- */
+    /* 🍔 DISEÑO DEL BOTÓN DE MENÚ HAMBURGUESA PERSONALIZADO (FUERZA BRUTA UX) */
+    /* -------------------------------------------------------------------------- */
+    
+    /* Permitir que el header superior exista pero sea transparente para nuestro botón */
     [data-testid="stHeader"] { 
         background-color: transparent !important; 
+        visibility: visible !important; /* Re-habilitamos visibilidad solo para el contenedor */
     }
     
-    /* ESTILO 1: BOTÓN DE MENÚ MÓVIL NATIVO */
+    /* ESTILO 1: BOTÓN DE MENÚ MÓVIL NATIVO (Selector Directo) */
     [data-testid="stHeader"] button {
         background-color: #48121b !important;
         border-radius: 12px !important;
         width: 60px !important;
         height: 60px !important;
-        margin-top: 25px !important;  /* 📏 Más alejado del tope de la pantalla */
+        margin-top: 35px !important;  /* 📏 Más alejado del tope de la pantalla (UX Táctil) */
         margin-left: 20px !important; /* 📏 Más alejado de la orilla */
         box-shadow: 2px 2px 10px rgba(0,0,0,0.5) !important;
         pointer-events: auto !important; 
+        z-index: 999999 !important;
     }
     [data-testid="stHeader"] button svg {
-        display: none !important; /* Oculta el ícono predeterminado */
+        display: none !important; /* Oculta el ícono de flecha predeterminado */
     }
+    /* Dibujamos el icono '☰' */
     [data-testid="stHeader"] button::after {
         content: "☰" !important;
         color: #ffffff !important;
@@ -122,16 +143,17 @@ st.markdown(
         transform: translate(-50%, -55%) !important;
     }
 
-    /* ESTILO 2: BOTÓN DE MENÚ TABLET/ESCRITORIO (La famosa flechita) */
+    /* ESTILO 2: BOTÓN DE MENÚ EN TABLET/ESCRITORIO (CollapsedControl) */
     [data-testid="collapsedControl"] {
         background-color: #48121b !important;
         border-radius: 12px !important;
         width: 60px !important;
         height: 60px !important;
-        top: 35px !important;  /* 📏 Aún más alejado del tope de la pantalla */
+        top: 45px !important;  /* 📏 Aún más alejado del tope de la pantalla */
         left: 20px !important;
         box-shadow: 2px 2px 10px rgba(0,0,0,0.5) !important;
         z-index: 999999 !important;
+        visibility: visible !important; /* Asegurar visibilidad */
     }
     [data-testid="collapsedControl"] svg {
         display: none !important;
@@ -148,11 +170,11 @@ st.markdown(
     
     /* -------------------------------------------------------------------------- */
     
-    /*Sidebar fondo */
+    /*Sidebar fondo institucional */
     [data-testid="stSidebar"] { background-color: #48121b !important; border-right: 1px solid rgba(255,255,255,0.1); }
     [data-testid="stSidebarNav"] { display: none !important; }
     
-    /* Buscador fijo en el techo */
+    /* Buscador fijo en el techo (Patrón de diseño móvil) */
     div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stTextInput"]) { position: -webkit-sticky !important; position: sticky !important; top: 10px !important; z-index: 9999 !important; background-color: #6a1b29 !important; padding: 10px 5px !important; border-radius: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important; }
 
     div[data-baseweb="input"], div[data-baseweb="base-input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; }
@@ -160,15 +182,17 @@ st.markdown(
     
     div[data-testid="stFormSubmitButton"] > button, div[data-testid="stButton"] > button[kind="primary"] { background-color: #48121b !important; color: #ffffff !important; border-radius: 10px !important; font-weight: 600 !important; width: 100% !important; border: 1px solid rgba(255, 255, 255, 0.35) !important;}
     
+    /* Paneles visuales */
     .panel-img { background-color: rgba(255, 255, 255, 0.12); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255, 255, 255, 0.3); }
 
+    /* Cartas de resultados (Tema claro sobre fondo oscuro) */
     .card-box { background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 25px; border-radius: 12px; border-left: 8px solid #d4af37; margin-bottom: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); }
     .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; }
     .col-name { font-weight: 700; color: #6a1b29 !important; }
     .col-val { color: #222222 !important; font-weight: 500; }
 
     /* --------------------------------------------------- */
-    /* 🔴 LÍNEA LÁSER ROJA ANIMADA PARA LA CÁMARA */
+    /* 🔴 LÍNEA LÁSER ROJA ANIMADA PARA LA CÁMARA (UX Móvil) */
     /* --------------------------------------------------- */
     div[data-testid="stCameraInput"] {
         position: relative;
@@ -231,7 +255,7 @@ if not st.session_state.autenticado:
         if usuario_input in USUARIOS and USUARIOS[usuario_input] == clave_input:
           st.session_state.autenticado = True
           st.session_state.usuario_actual = usuario_input
-          st.query_params["auth_token"] = usuario_input
+          # st.query_params["auth_token"] = usuario_input # Opcional: Guardar en URL
           st.rerun()
         else:
           st.error("❌ Credenciales incorrectas.")
@@ -245,6 +269,7 @@ with st.sidebar:
   st.markdown("### ⚙️ Menú de Herramientas")
   st.divider()
   
+  # Selector de módulos (Navegación Defensiva Try/Catch)
   modulo_activo = st.radio(
       "Selecciona un módulo:",
       [
@@ -258,6 +283,7 @@ with st.sidebar:
   st.divider()
   st.markdown(f"**Usuario:** {st.session_state.usuario_actual.upper()}")
   
+  # Botón Cerrar Sesión
   if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
     st.session_state.autenticado = False
     st.session_state.usuario_actual = ""
@@ -280,12 +306,14 @@ def cargar_y_unificar_datos(ruta_archivo):
         df.dropna(how="all").rename(columns=lambda c: str(c).strip())
         for _, df in dict_hojas.items()
     ]
+    # Retornamos el DataFrame unificado (No normalizado por defecto para Trazabilidad)
     return pd.concat(lista_dfs, ignore_index=True).fillna("")
   except Exception:
     return None
 
 df_datos = cargar_y_unificar_datos(ARCHIVO_EXCEL)
 
+# Función de normalización de texto para búsqueda (Ingeniería de Software)
 def normalizar(texto):
   if pd.isna(texto):
     return ""
@@ -327,6 +355,7 @@ if modulo_activo == "Buscador de Exámenes":
     if df_resultados.empty:
       st.warning(f"⚠️ No se encontró información para **'{consulta}'**.")
     else:
+      # Diseño defensivo: Trazabilidad de columnas dinámicas del Excel
       for _, fila in df_resultados.iterrows():
         html_card = '<div class="card-box">'
         for col, val in fila.items():
@@ -365,6 +394,7 @@ elif modulo_activo == "Órdenes y Comprobantes":
         img_pil_orden = Image.open(img_orden)
         texto_ocr = pytesseract.image_to_string(img_pil_orden, lang="spa")
         st.success("✅ Imagen leída correctamente. Módulo de auditoría en preparación...")
+        # st.write(texto_ocr)
       except Exception:
         st.warning("⚠️ No se pudo extraer el texto de la imagen.")
     else:
@@ -422,28 +452,34 @@ elif modulo_activo == "Escáner de Inventario":
               unsafe_allow_html=True,
           )
 
-          # BOTÓN PARA GUARDAR EN GOOGLE SHEETS
+          # BOTÓN PARA GUARDAR EN GOOGLE SHEETS (UX Táctil)
           if st.button("☁️ Guardar en Google Sheets", type="primary", use_container_width=True):
             if not CONEXION_GOOGLE_OK:
               st.error("❌ Falta configurar las librerías de Google en la nube.")
             else:
               with st.spinner("⏳ Analizando conexión y enviando datos..."):
                   
+                  # Ingeniería Defensiva: Diagnóstico paso a paso
+                  
                   if "google_json" not in st.secrets:
                       st.error("🛑 DIAGNÓSTICO: No se encontró la llave 'google_json' en Streamlit secrets.")
                       st.stop()
                   
                   try:
+                      # 1. Autenticación en Google Cloud
                       scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
                       credenciales_dict = json.loads(st.secrets["google_json"])
                       creds = ServiceAccountCredentials.from_json_keyfile_dict(credenciales_dict, scope)
                       cliente = gspread.authorize(creds)
 
+                      # 2. Apertura del archivo principal (Por URL para trazabilidad infalible)
                       hoja_calculo = cliente.open_by_url(URL_GOOGLE_SHEETS)
                       
+                      # 3. Localización Defensiva de Pestañas (Evita SpreadsheetNotFound accidentales)
                       todas_las_pestañas = hoja_calculo.worksheets()
                       pestaña_objetivo = None
                       
+                      # Búsqueda inteligente (Ignora mayúsculas y espacios accidentales en el Excel)
                       for p in todas_las_pestañas:
                           if p.title.strip().upper() == area_destino.strip().upper():
                               pestaña_objetivo = p
@@ -452,6 +488,8 @@ elif modulo_activo == "Escáner de Inventario":
                       if pestaña_objetivo is None:
                           st.error(f"🛑 DIAGNÓSTICO: No se encontró la pestaña '{area_destino}' en el Excel.")
                       else:
+                          # 4. Inserción de Datos (Alineada con tu Excel local)
+                          # Estructura: Por asignar, Código, [vacio], NUEVO INGRESO, 1, Fecha, [vacio]x3, Usuario, Comentario, [vacio]x2
                           nueva_fila = [
                               "Por asignar", texto_capturado, "", "NUEVO INGRESO", 1,
                               fecha_hoy, "", "", "", usuario_logueado,
@@ -459,8 +497,10 @@ elif modulo_activo == "Escáner de Inventario":
                           ]
                           
                           pestaña_objetivo.append_row(nueva_fila)
+                          
+                          # 5. Feedback Visual Final (UX)
                           st.balloons()
-                          st.success(f"🎉 ¡ÉXITO TOTAL! Insumo '{texto_capturado}' guardado en la nube.")
+                          st.success(f"🎉 ¡ÉXITO TOTAL! Insumo '{texto_capturado}' guardado en la nube perfectamente.")
 
                   except json.JSONDecodeError:
                       st.error("🛑 DIAGNÓSTICO: La llave secreta en Streamlit no tiene formato JSON válido.")
