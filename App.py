@@ -60,7 +60,7 @@ st.set_page_config(
 # ==============================================================================
 USUARIOS = {
     "recepcion": "lab2026",
-    "tecnologo": "12345",   # <--- CONTRASEÑA RÁPIDA ACTUALIZADA AQUÍ
+    "tecnologo": "12345",
     "admin": "admin1234",
 }
 
@@ -85,58 +85,71 @@ st.markdown(
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     
     .stApp { background-color: #6a1b29; color: #ffffff; }
-    [data-testid="stHeader"] { background-color: transparent !important; height: 0px !important; pointer-events: none !important; }
     div[data-testid="InputInstructions"], div[data-testid="stInputInstructions"], div[class*="InputInstructions"], div[data-testid="stTextInput"] small { display: none !important; }
     .stMarkdown, p, h1, h2, h3, h4, span, label { color: #ffffff !important; }
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
     /* -------------------------------------------------------------------------- */
-    /* 🍔 TRANSFORMACIÓN DEFECTIVA DEL BOTÓN DE MENÚ (TRAZABILIDAD UX MÓVIL) */
+    /* 🍔 TRANSFORMACIÓN TOTAL DEL BOTÓN DE MENÚ (FUERZA BRUTA PARA MÓVIL Y TABLET) */
     /* -------------------------------------------------------------------------- */
     
-    /* 1. Seleccionamos el contenedor del botón de menú de Streamlit */
-    [data-testid="collapsedControl"] {
-        top: 70px !important;       /* 📏 Aléjalo del tope de la pantalla (Evita interferencia con Status Bar) */
-        left: 20px !important;      /* Muévelo ligeramente a la derecha */
-        background-color: #48121b !important; /* Fondo burdeo para que resalte (Color institucional secundario) */
-        border-radius: 12px !important; /* Bordes redondeados profesionales */
-        
-        /* 2. Hazlo MÁS GRANDE (Área de toque fácil - Patrón UX Móvil) */
-        width: 65px !important;     /* Ancho mayor para facilitar el click */
-        height: 65px !important;    /* Alto mayor para facilitar el click */
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        cursor: pointer !important;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.5) !important; /* Sombras para aspecto 3D */
-        z-index: 99999 !important; /* Asegura que esté por encima de todo */
+    /* Permitir que el header superior exista pero sea transparente */
+    [data-testid="stHeader"] { 
+        background-color: transparent !important; 
+    }
+    
+    /* ESTILO 1: BOTÓN DE MENÚ MÓVIL NATIVO */
+    [data-testid="stHeader"] button {
+        background-color: #48121b !important;
+        border-radius: 12px !important;
+        width: 60px !important;
+        height: 60px !important;
+        margin-top: 25px !important;  /* 📏 Más alejado del tope de la pantalla */
+        margin-left: 20px !important; /* 📏 Más alejado de la orilla */
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.5) !important;
+        pointer-events: auto !important; 
+    }
+    [data-testid="stHeader"] button svg {
+        display: none !important; /* Oculta el ícono predeterminado */
+    }
+    [data-testid="stHeader"] button::after {
+        content: "☰" !important;
+        color: #ffffff !important;
+        font-size: 35px !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -55%) !important;
     }
 
-    /* 3. OCULTAMOS la flechita predeterminada de Streamlit (No apta para UX móvil) */
+    /* ESTILO 2: BOTÓN DE MENÚ TABLET/ESCRITORIO (La famosa flechita) */
+    [data-testid="collapsedControl"] {
+        background-color: #48121b !important;
+        border-radius: 12px !important;
+        width: 60px !important;
+        height: 60px !important;
+        top: 35px !important;  /* 📏 Aún más alejado del tope de la pantalla */
+        left: 20px !important;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.5) !important;
+        z-index: 999999 !important;
+    }
     [data-testid="collapsedControl"] svg {
         display: none !important;
     }
-
-    /* 4. DIBUJAMOS el icono de Menú de Barras (Hamburguesa) ENORME */
     [data-testid="collapsedControl"]::after {
-        content: "☰";              /* Carácter de barras horizontales */
-        color: #ffffff !important;  /* Color blanco de las barras */
-        font-size: 38px !important; /* 🌟 Tamaño ENORME para que sea súper fácil de ver y apretar */
-        font-weight: bold !important;
-        margin-top: -3px;           /* Ajuste fino de centrado */
-    }
-    
-    /* 5. Efecto de feedback visual al tocar */
-    [data-testid="collapsedControl"]:active {
-        background-color: #5c1824 !important;
-        transform: scale(0.95);
+        content: "☰" !important;
+        color: #ffffff !important;
+        font-size: 35px !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -55%) !important;
     }
     
     /* -------------------------------------------------------------------------- */
     
     /*Sidebar fondo */
     [data-testid="stSidebar"] { background-color: #48121b !important; border-right: 1px solid rgba(255,255,255,0.1); }
-    /* Ocultar la navegación automática aburrida */
     [data-testid="stSidebarNav"] { display: none !important; }
     
     /* Buscador fijo en el techo */
@@ -232,7 +245,6 @@ with st.sidebar:
   st.markdown("### ⚙️ Menú de Herramientas")
   st.divider()
   
-  # Selector de módulos (Reemplaza las pestañas antiguas)
   modulo_activo = st.radio(
       "Selecciona un módulo:",
       [
@@ -246,7 +258,6 @@ with st.sidebar:
   st.divider()
   st.markdown(f"**Usuario:** {st.session_state.usuario_actual.upper()}")
   
-  # Botón Cerrar Sesión
   if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
     st.session_state.autenticado = False
     st.session_state.usuario_actual = ""
@@ -354,7 +365,6 @@ elif modulo_activo == "Órdenes y Comprobantes":
         img_pil_orden = Image.open(img_orden)
         texto_ocr = pytesseract.image_to_string(img_pil_orden, lang="spa")
         st.success("✅ Imagen leída correctamente. Módulo de auditoría en preparación...")
-        # st.write(texto_ocr)
       except Exception:
         st.warning("⚠️ No se pudo extraer el texto de la imagen.")
     else:
@@ -419,26 +429,21 @@ elif modulo_activo == "Escáner de Inventario":
             else:
               with st.spinner("⏳ Analizando conexión y enviando datos..."):
                   
-                  # 1. Verificar si el secreto existe (Diagnóstico)
                   if "google_json" not in st.secrets:
                       st.error("🛑 DIAGNÓSTICO: No se encontró la llave 'google_json' en Streamlit secrets.")
                       st.stop()
                   
                   try:
-                      # Conectar usando los Secrets de Streamlit Cloud
                       scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
                       credenciales_dict = json.loads(st.secrets["google_json"])
                       creds = ServiceAccountCredentials.from_json_keyfile_dict(credenciales_dict, scope)
                       cliente = gspread.authorize(creds)
 
-                      # Abrir archivo principal
                       hoja_calculo = cliente.open_by_url(URL_GOOGLE_SHEETS)
                       
-                      # 🛡️ TRAZABILIDAD DEFENSIVA DE PESTAÑAS
                       todas_las_pestañas = hoja_calculo.worksheets()
                       pestaña_objetivo = None
                       
-                      # Búsqueda inteligente (Ignora mayúsculas y espacios accidentales en el Excel)
                       for p in todas_las_pestañas:
                           if p.title.strip().upper() == area_destino.strip().upper():
                               pestaña_objetivo = p
@@ -447,14 +452,12 @@ elif modulo_activo == "Escáner de Inventario":
                       if pestaña_objetivo is None:
                           st.error(f"🛑 DIAGNÓSTICO: No se encontró la pestaña '{area_destino}' en el Excel.")
                       else:
-                          # Fila alineada con tu Excel local
                           nueva_fila = [
                               "Por asignar", texto_capturado, "", "NUEVO INGRESO", 1,
                               fecha_hoy, "", "", "", usuario_logueado,
                               "Ingresado por App Móvil", "", ""
                           ]
                           
-                          # Escribir en la nube mágicamente
                           pestaña_objetivo.append_row(nueva_fila)
                           st.balloons()
                           st.success(f"🎉 ¡ÉXITO TOTAL! Insumo '{texto_capturado}' guardado en la nube.")
