@@ -11,7 +11,7 @@ import streamlit as st
 # ==============================================================================
 try:
   from PIL import Image
-  from pyzbar.pyzbar import decode
+  from pyzbar.pyzbar import decode  # type: ignore
   LECTOR_DISPONIBLE = True
 except ImportError:
   LECTOR_DISPONIBLE = False
@@ -325,4 +325,25 @@ elif modulo_activo == "Escáner de Inventario":
                       pestaña_objetivo = None
                       
                       for p in todas_las_pestañas:
-                          if p.title.strip().upper() == area
+                          if p.title.strip().upper() == area_destino.strip().upper():
+                              pestaña_objetivo = p
+                              break
+                      
+                      if pestaña_objetivo is None:
+                          nombres_disponibles = ", ".join([f"'{p.title}'" for p in todas_las_pestañas])
+                          st.error(f"🛑 DIAGNÓSTICO 5: No encontré la pestaña '{area_destino}'. Pestañas disponibles: {nombres_disponibles}")
+                          st.stop()
+                      
+                      # Si todo está perfecto, ESCRIBIMOS!
+                      nueva_fila = [
+                          "Por asignar", texto_capturado, "", "NUEVO INGRESO", 1,
+                          fecha_hoy, "", "", "", usuario_logueado,
+                          "Ingresado por App Móvil", "", ""
+                      ]
+                      
+                      pestaña_objetivo.append_row(nueva_fila)
+                      st.balloons()
+                      st.success(f"🎉 ¡ÉXITO TOTAL! Insumo '{texto_capturado}' guardado en la nube perfectamente.")
+
+                  except Exception as e:
+                      st.error(f"🛑 DIAGNÓSTICO FINAL: Ocurrió un error inesperado al escribir los datos. Detalle: {e}")
