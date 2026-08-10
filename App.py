@@ -51,7 +51,6 @@ for posible_nombre in ["logo lab.png", "logo.png", "logo lab.webp", "logo.webp"]
 # TU ENLACE OFICIAL DE GOOGLE SHEETS
 URL_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1fIS5shJvhrynJ6v7Z5jQZpUkIq6kQEPr4gn2sza9ylY/edit?gid=764153428#gid=764153428"
 
-
 st.set_page_config(
     page_title="Lab Archipiélago", page_icon=icono_app, layout="centered"
 )
@@ -76,11 +75,12 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS
+# 🎨 ESTILOS CSS (DISEÑO MÓVIL, MENÚ HAMBURGUESA Y LÁSER ROJO)
 # ==============================================================================
 st.markdown(
     """
     <style>
+    /* Arquitectura para bloqueo de recargas */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     
@@ -90,9 +90,41 @@ st.markdown(
     .stMarkdown, p, h1, h2, h3, h4, span, label { color: #ffffff !important; }
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
+    /* --------------------------------------------------- */
+    /* 🍔 TRANSFORMACIÓN DEL BOTÓN A MENÚ HAMBURGUESA */
+    /* --------------------------------------------------- */
+    /* Ocultar la flechita pequeña por defecto */
+    [data-testid="collapsedControl"] svg {
+        display: none !important;
+    }
+    /* Crear el ícono de las tres barras */
+    [data-testid="collapsedControl"]::before {
+        content: '☰';
+        font-size: 26px;
+        color: #ffffff;
+        font-weight: bold;
+        line-height: 1;
+    }
+    /* Hacer el botón más grande y con fondo */
+    [data-testid="collapsedControl"] {
+        background-color: #48121b !important;
+        border-radius: 8px !important;
+        padding: 8px 15px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
+        z-index: 99999 !important;
+        top: 15px !important;
+        left: 15px !important;
+        transition: 0.2s;
+    }
+    [data-testid="collapsedControl"]:active {
+        transform: scale(0.9);
+    }
+    
+    /* Sidebar fondo */
     [data-testid="stSidebar"] { background-color: #48121b !important; border-right: 1px solid rgba(255,255,255,0.1); }
     [data-testid="stSidebarNav"] { display: none !important; }
     
+    /* Buscador fijo */
     div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stTextInput"]) { position: -webkit-sticky !important; position: sticky !important; top: 10px !important; z-index: 9999 !important; background-color: #6a1b29 !important; padding: 10px 5px !important; border-radius: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important; }
 
     div[data-baseweb="input"], div[data-baseweb="base-input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; }
@@ -106,6 +138,35 @@ st.markdown(
     .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; }
     .col-name { font-weight: 700; color: #6a1b29 !important; }
     .col-val { color: #222222 !important; font-weight: 500; }
+
+    /* --------------------------------------------------- */
+    /* 🔴 LÍNEA LÁSER ROJA ANIMADA PARA LA CÁMARA */
+    /* --------------------------------------------------- */
+    div[data-testid="stCameraInput"] {
+        position: relative;
+        overflow: hidden;
+        border-radius: 10px;
+    }
+    div[data-testid="stCameraInput"]::after {
+        content: '';
+        position: absolute;
+        top: 20%;
+        left: 5%;
+        right: 5%;
+        height: 3px;
+        background-color: rgba(255, 0, 0, 0.8);
+        box-shadow: 0 0 15px 4px rgba(255, 0, 0, 0.9);
+        z-index: 99;
+        pointer-events: none;
+        animation: scanline 2.5s infinite linear;
+    }
+    @keyframes scanline {
+        0% { top: 15%; opacity: 0; }
+        15% { opacity: 1; }
+        50% { top: 85%; }
+        85% { opacity: 1; }
+        100% { top: 15%; opacity: 0; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -120,7 +181,7 @@ if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
   mime = "image/png" if logo_encontrado.endswith(".png") else "image/webp"
   st.markdown(
-      f'<div style="text-align: center; margin-bottom: 5px;"><img'
+      f'<div style="text-align: center; margin-bottom: 5px; margin-top: 20px;"><img'
       f' src="data:{mime};base64,{img_b64}" style="width: 130px; max-width:'
       ' 70%;"></div>',
       unsafe_allow_html=True,
@@ -153,7 +214,7 @@ if not st.session_state.autenticado:
 # ☰ MENÚ LATERAL
 # ==============================================================================
 with st.sidebar:
-  st.markdown("### Menú de Herramientas")
+  st.markdown("### ⚙️ Menú de Herramientas")
   st.divider()
   modulo_activo = st.radio(
       "Selecciona un módulo:",
@@ -251,7 +312,7 @@ elif modulo_activo == "Escáner de Inventario":
       ],
   )
 
-  st.info("📸 Enfoca el código de barras del producto directamente con la cámara:")
+  st.info("📸 Enfoca el código de barras del producto:")
   foto_codigo = st.camera_input("Escáner de Código de Barras", label_visibility="collapsed")
 
   if foto_codigo:
@@ -287,39 +348,35 @@ elif modulo_activo == "Escáner de Inventario":
             else:
               with st.spinner("⏳ Analizando conexión y enviando datos..."):
                   
-                  # ---------------------------------------------------------
-                  # INICIO DEL BLOQUE DE DIAGNÓSTICO (PROGRAMACIÓN DEFENSIVA)
-                  # ---------------------------------------------------------
-                  
-                  # PASO 1: Verificar si el secreto existe
+                  # PASO 1
                   if "google_json" not in st.secrets:
-                      st.error("🛑 DIAGNÓSTICO 1: No se encontró la llave 'google_json' en Streamlit. Ve a tu panel de Streamlit Cloud (share.streamlit.io), entra a Settings > Secrets y asegúrate de haber pegado el código y presionado Save.")
+                      st.error("🛑 DIAGNÓSTICO 1: No se encontró la llave 'google_json' en Streamlit.")
                       st.stop()
                   
-                  # PASO 2: Intentar leer el formato del JSON
+                  # PASO 2
                   try:
                       credenciales_dict = json.loads(st.secrets["google_json"])
                   except Exception as e:
-                      st.error(f"🛑 DIAGNÓSTICO 2 (Error de Formato): La llave secreta en Streamlit tiene un error de sintaxis. Asegúrate de haber usado 3 comillas simples al inicio y al final ('''). Detalle técnico: {e}")
+                      st.error(f"🛑 DIAGNÓSTICO 2: La llave secreta en Streamlit tiene un error de sintaxis. Detalle: {e}")
                       st.stop()
                   
-                  # PASO 3: Intentar autorizar al Robot en Google
+                  # PASO 3
                   try:
                       scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
                       creds = ServiceAccountCredentials.from_json_keyfile_dict(credenciales_dict, scope)
                       cliente = gspread.authorize(creds)
                   except Exception as e:
-                      st.error(f"🛑 DIAGNÓSTICO 3 (Error de Credenciales): El archivo JSON de la llave está corrupto o inválido. Detalle: {e}")
+                      st.error(f"🛑 DIAGNÓSTICO 3: Error de credenciales de Google. Detalle: {e}")
                       st.stop()
 
-                  # PASO 4: Intentar abrir la URL de Google Sheets
+                  # PASO 4
                   try:
                       hoja_calculo = cliente.open_by_url(URL_GOOGLE_SHEETS)
                   except Exception as e:
-                      st.error(f"🛑 DIAGNÓSTICO 4 (Error de Permisos 403): El Robot no tiene permiso para entrar. SOLUCIÓN: Ve a tu Google Sheets > Compartir > y pon 'Cualquier persona con el enlace' como 'Editor'. Detalle técnico: {e}")
+                      st.error(f"🛑 DIAGNÓSTICO 4 (Error 403): El Robot no tiene permiso para entrar. Verifica en el Excel que el link esté como 'Cualquier persona con el enlace' Editor. Detalle: {e}")
                       st.stop()
 
-                  # PASO 5: Escribir los datos en la pestaña correcta
+                  # PASO 5
                   try:
                       todas_las_pestañas = hoja_calculo.worksheets()
                       pestaña_objetivo = None
@@ -334,7 +391,6 @@ elif modulo_activo == "Escáner de Inventario":
                           st.error(f"🛑 DIAGNÓSTICO 5: No encontré la pestaña '{area_destino}'. Pestañas disponibles: {nombres_disponibles}")
                           st.stop()
                       
-                      # Si todo está perfecto, ESCRIBIMOS!
                       nueva_fila = [
                           "Por asignar", texto_capturado, "", "NUEVO INGRESO", 1,
                           fecha_hoy, "", "", "", usuario_logueado,
@@ -346,4 +402,4 @@ elif modulo_activo == "Escáner de Inventario":
                       st.success(f"🎉 ¡ÉXITO TOTAL! Insumo '{texto_capturado}' guardado en la nube perfectamente.")
 
                   except Exception as e:
-                      st.error(f"🛑 DIAGNÓSTICO FINAL: Ocurrió un error inesperado al escribir los datos. Detalle: {e}")
+                      st.error(f"🛑 DIAGNÓSTICO FINAL: Ocurrió un error inesperado al escribir. Detalle: {e}")
