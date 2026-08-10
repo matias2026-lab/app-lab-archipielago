@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 # ==============================================================================
-# LIBRERÍAS DE HARDWARE, LECTURA Y NUBE
+# LIBRERÍAS DE HARDWARE Y NUBE (Cámara, OCR, Barcode y Google Sheets)
 # ==============================================================================
 try:
   from PIL import Image
@@ -22,7 +22,6 @@ try:
 except ImportError:
   OCR_DISPONIBLE = False
 
-# type: ignore para evitar falsas alarmas en tu editor de código
 try:
   import gspread # type: ignore
   from oauth2client.service_account import ServiceAccountCredentials # type: ignore
@@ -31,7 +30,7 @@ except ImportError:
   CONEXION_GOOGLE_OK = False
 
 # ==============================================================================
-# 🌟 CONFIGURACIÓN DE PÁGINA Y ENLACES
+# 🌟 CONFIGURACIÓN DE PÁGINA E ÍCONO OFICIAL
 # ==============================================================================
 icono_app = "🧪"
 logo_encontrado = None
@@ -51,16 +50,17 @@ for posible_nombre in ["logo lab.png", "logo.png", "logo lab.webp", "logo.webp"]
 # TU ENLACE OFICIAL DE GOOGLE SHEETS
 URL_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/1fIS5shJvhrynJ6v7Z5jQZpUkIq6kQEPr4gn2sza9ylY/edit?gid=764153428#gid=764153428"
 
+
 st.set_page_config(
     page_title="Lab Archipiélago", page_icon=icono_app, layout="centered"
 )
 
 # ==============================================================================
-# 🔐 USUARIOS
+# 🔐 CONFIGURACIÓN DE USUARIOS Y CONTRASEÑAS
 # ==============================================================================
 USUARIOS = {
     "recepcion": "lab2026",
-    "tecnologo": "archipielago2026",
+    "tecnologo": "12345",   # <--- CONTRASEÑA RÁPIDA ACTUALIZADA AQUÍ
     "admin": "admin1234",
 }
 
@@ -75,7 +75,7 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS (DISEÑO MÓVIL, MENÚ HAMBURGUESA Y LÁSER ROJO)
+# 🎨 ESTILOS CSS PROFESIONALES Y ARQUITECTURA PWA
 # ==============================================================================
 st.markdown(
     """
@@ -90,41 +90,56 @@ st.markdown(
     .stMarkdown, p, h1, h2, h3, h4, span, label { color: #ffffff !important; }
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
-    /* --------------------------------------------------- */
-    /* 🍔 TRANSFORMACIÓN DEL BOTÓN A MENÚ HAMBURGUESA */
-    /* --------------------------------------------------- */
-    /* Ocultar la flechita pequeña por defecto */
+    /* -------------------------------------------------------------------------- */
+    /* 🍔 TRANSFORMACIÓN DEFECTIVA DEL BOTÓN DE MENÚ (TRAZABILIDAD UX MÓVIL) */
+    /* -------------------------------------------------------------------------- */
+    
+    /* 1. Seleccionamos el contenedor del botón de menú de Streamlit */
+    [data-testid="collapsedControl"] {
+        top: 70px !important;       /* 📏 Aléjalo del tope de la pantalla (Evita interferencia con Status Bar) */
+        left: 20px !important;      /* Muévelo ligeramente a la derecha */
+        background-color: #48121b !important; /* Fondo burdeo para que resalte (Color institucional secundario) */
+        border-radius: 12px !important; /* Bordes redondeados profesionales */
+        
+        /* 2. Hazlo MÁS GRANDE (Área de toque fácil - Patrón UX Móvil) */
+        width: 65px !important;     /* Ancho mayor para facilitar el click */
+        height: 65px !important;    /* Alto mayor para facilitar el click */
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.5) !important; /* Sombras para aspecto 3D */
+        z-index: 99999 !important; /* Asegura que esté por encima de todo */
+    }
+
+    /* 3. OCULTAMOS la flechita predeterminada de Streamlit (No apta para UX móvil) */
     [data-testid="collapsedControl"] svg {
         display: none !important;
     }
-    /* Crear el ícono de las tres barras */
-    [data-testid="collapsedControl"]::before {
-        content: '☰';
-        font-size: 26px;
-        color: #ffffff;
-        font-weight: bold;
-        line-height: 1;
-    }
-    /* Hacer el botón más grande y con fondo */
-    [data-testid="collapsedControl"] {
-        background-color: #48121b !important;
-        border-radius: 8px !important;
-        padding: 8px 15px !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
-        z-index: 99999 !important;
-        top: 15px !important;
-        left: 15px !important;
-        transition: 0.2s;
-    }
-    [data-testid="collapsedControl"]:active {
-        transform: scale(0.9);
+
+    /* 4. DIBUJAMOS el icono de Menú de Barras (Hamburguesa) ENORME */
+    [data-testid="collapsedControl"]::after {
+        content: "☰";              /* Carácter de barras horizontales */
+        color: #ffffff !important;  /* Color blanco de las barras */
+        font-size: 38px !important; /* 🌟 Tamaño ENORME para que sea súper fácil de ver y apretar */
+        font-weight: bold !important;
+        margin-top: -3px;           /* Ajuste fino de centrado */
     }
     
-    /* Sidebar fondo */
+    /* 5. Efecto de feedback visual al tocar */
+    [data-testid="collapsedControl"]:active {
+        background-color: #5c1824 !important;
+        transform: scale(0.95);
+    }
+    
+    /* -------------------------------------------------------------------------- */
+    
+    /*Sidebar fondo */
     [data-testid="stSidebar"] { background-color: #48121b !important; border-right: 1px solid rgba(255,255,255,0.1); }
+    /* Ocultar la navegación automática aburrida */
     [data-testid="stSidebarNav"] { display: none !important; }
     
-    /* Buscador fijo */
+    /* Buscador fijo en el techo */
     div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stTextInput"]) { position: -webkit-sticky !important; position: sticky !important; top: 10px !important; z-index: 9999 !important; background-color: #6a1b29 !important; padding: 10px 5px !important; border-radius: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important; }
 
     div[data-baseweb="input"], div[data-baseweb="base-input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; }
@@ -190,10 +205,10 @@ if logo_encontrado:
 st.markdown('<h1 class="title-text">Laboratorio Archipiélago</h1>', unsafe_allow_html=True)
 
 # ==============================================================================
-# 🔐 LOGIN
+# 🔐 LOGIN DE ACCESO (PROTECCIÓN DE RUTAS)
 # ==============================================================================
 if not st.session_state.autenticado:
-  st.markdown("<h3 style='text-align: center;'>Acceso Restringido</h3>", unsafe_allow_html=True)
+  st.markdown("<h3 style='text-align: center;'>Acceso Restringido para Personal</h3>", unsafe_allow_html=True)
   col_vacia1, col_login, col_vacia2 = st.columns([0.2, 2.6, 0.2])
   with col_login:
     with st.form("form_login", clear_on_submit=False):
@@ -211,19 +226,28 @@ if not st.session_state.autenticado:
 
 
 # ==============================================================================
-# ☰ MENÚ LATERAL
+# ☰ MENÚ LATERAL (SIDEBAR) CONTENIDO
 # ==============================================================================
 with st.sidebar:
   st.markdown("### ⚙️ Menú de Herramientas")
   st.divider()
+  
+  # Selector de módulos (Reemplaza las pestañas antiguas)
   modulo_activo = st.radio(
       "Selecciona un módulo:",
-      ["Buscador de Exámenes", "Órdenes y Comprobantes", "Escáner de Inventario"],
+      [
+          "Buscador de Exámenes",
+          "Órdenes y Comprobantes",
+          "Escáner de Inventario",
+      ],
       label_visibility="collapsed"
   )
+  
   st.divider()
   st.markdown(f"**Usuario:** {st.session_state.usuario_actual.upper()}")
-  if st.button("Cerrar Sesión", type="primary", use_container_width=True):
+  
+  # Botón Cerrar Sesión
+  if st.button("🚪 Cerrar Sesión", type="primary", use_container_width=True):
     st.session_state.autenticado = False
     st.session_state.usuario_actual = ""
     st.query_params.clear()
@@ -237,34 +261,56 @@ ARCHIVO_EXCEL = "APP lab archipielago 2.xlsx"
 
 @st.cache_data(ttl=2)
 def cargar_y_unificar_datos(ruta_archivo):
-  if not os.path.exists(ruta_archivo): return None
+  if not os.path.exists(ruta_archivo):
+    return None
   try:
     dict_hojas = pd.read_excel(ruta_archivo, sheet_name=None)
-    lista_dfs = [df.dropna(how="all").rename(columns=lambda c: str(c).strip()) for _, df in dict_hojas.items()]
+    lista_dfs = [
+        df.dropna(how="all").rename(columns=lambda c: str(c).strip())
+        for _, df in dict_hojas.items()
+    ]
     return pd.concat(lista_dfs, ignore_index=True).fillna("")
-  except Exception: return None
+  except Exception:
+    return None
 
 df_datos = cargar_y_unificar_datos(ARCHIVO_EXCEL)
 
 def normalizar(texto):
-  if pd.isna(texto): return ""
-  return "".join([c for c in unicodedata.normalize("NFKD", str(texto).lower()) if not unicodedata.combining(c)])
+  if pd.isna(texto):
+    return ""
+  return "".join([
+      c
+      for c in unicodedata.normalize("NFKD", str(texto).lower())
+      if not unicodedata.combining(c)
+  ])
 
 
 # ==============================================================================
-# 🔓 RUTEO DE PANTALLAS
+# 🔓 RUTEO DE PANTALLAS (LÓGICA DEL MENÚ)
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# MÓDULO 1: BUSCADOR
+# MÓDULO 1: BUSCADOR DE EXÁMENES
 # ------------------------------------------------------------------------------
 if modulo_activo == "Buscador de Exámenes":
-  consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="🔍 Buscar exámenes, códigos...")
+  
+  consulta = st.text_input(
+      "Búsqueda",
+      label_visibility="collapsed",
+      placeholder="🔍 Buscar exámenes, códigos o indicaciones...",
+  )
+
   st.divider()
 
   if consulta.strip() and df_datos is not None:
     palabras = [p for p in normalizar(consulta).split() if p]
-    def coincide_examen(fila): return all(term in normalizar(" ".join([str(v) for v in fila.values])) for term in palabras)
+
+    def coincide_examen(fila):
+      return all(
+          term in normalizar(" ".join([str(v) for v in fila.values]))
+          for term in palabras
+      )
+
     df_resultados = df_datos[df_datos.apply(coincide_examen, axis=1)]
 
     if df_resultados.empty:
@@ -273,30 +319,51 @@ if modulo_activo == "Buscador de Exámenes":
       for _, fila in df_resultados.iterrows():
         html_card = '<div class="card-box">'
         for col, val in fila.items():
-          if str(val).strip(): html_card += f'<div class="row-item"><span class="col-name">{col}:</span> <span class="col-val">{val}</span></div>'
+          if str(val).strip():
+            html_card += (
+                f'<div class="row-item"><span class="col-name">{col}:</span>'
+                f' <span class="col-val">{val}</span></div>'
+            )
         st.markdown(html_card + "</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# MÓDULO 2: ÓRDENES Y COMPROBANTES
+# MÓDULO 2: ÓRDENES Y COMPROBANTES (OCR)
 # ------------------------------------------------------------------------------
 elif modulo_activo == "Órdenes y Comprobantes":
   st.markdown("<h3 style='text-align: center;'>Revisión de Órdenes y Comprobantes</h3>", unsafe_allow_html=True)
   st.markdown('<div class="panel-img">', unsafe_allow_html=True)
   
-  opcion_img = st.radio("Elige cómo adjuntar el documento:", ["📁 Subir Imagen / Galería", "📸 Usar Cámara Directa"], horizontal=True)
-  img_orden = st.file_uploader("Selecciona la foto", type=["png", "jpg", "jpeg", "webp"]) if "Galería" in opcion_img else st.camera_input("Fotografía la orden médica")
+  opcion_img = st.radio(
+      "Elige cómo adjuntar el documento:",
+      ["📁 Subir Imagen / Galería", "📸 Usar Cámara Directa"],
+      horizontal=True,
+  )
+
+  img_orden = None
+  if "Galería" in opcion_img:
+    img_orden = st.file_uploader(
+        "Selecciona la foto de la orden o voucher",
+        type=["png", "jpg", "jpeg", "webp"],
+    )
+  else:
+    img_orden = st.camera_input("Fotografía la orden médica o comprobante")
 
   if img_orden:
     if OCR_DISPONIBLE:
       try:
-        texto_ocr = pytesseract.image_to_string(Image.open(img_orden), lang="spa")
+        img_pil_orden = Image.open(img_orden)
+        texto_ocr = pytesseract.image_to_string(img_pil_orden, lang="spa")
         st.success("✅ Imagen leída correctamente. Módulo de auditoría en preparación...")
-      except Exception: st.warning("⚠️ No se pudo extraer el texto de la imagen.")
-    else: st.info("💡 Módulo OCR en sincronización.")
+        # st.write(texto_ocr)
+      except Exception:
+        st.warning("⚠️ No se pudo extraer el texto de la imagen.")
+    else:
+      st.info("💡 El módulo de lectura OCR se está sincronizando en la nube.")
+      
   st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# MÓDULO 3: ESCÁNER CON PROGRAMACIÓN DEFENSIVA Y TRAZABILIDAD
+# MÓDULO 3: ESCÁNER DE INVENTARIO (GOOGLE SHEETS CON TRAZABILIDAD)
 # ------------------------------------------------------------------------------
 elif modulo_activo == "Escáner de Inventario":
   st.markdown("<h3 style='text-align: center;'>Escáner de Inventario</h3>", unsafe_allow_html=True)
@@ -312,7 +379,7 @@ elif modulo_activo == "Escáner de Inventario":
       ],
   )
 
-  st.info("📸 Enfoca el código de barras del producto:")
+  st.info("📸 Enfoca el código de barras del producto directamente con la cámara:")
   foto_codigo = st.camera_input("Escáner de Código de Barras", label_visibility="collapsed")
 
   if foto_codigo:
@@ -323,83 +390,80 @@ elif modulo_activo == "Escáner de Inventario":
       codigos_detectados = decode(img_pil)
 
       if not codigos_detectados:
-        st.warning("⚠️ No se detectó ningún código. Asegúrate de enfocar bien las líneas.")
+        st.warning("⚠️ No se detectó ningún código. Asegúrate de enfocar bien las líneas negras con buena luz.")
       else:
         for cod in codigos_detectados:
           texto_capturado = cod.data.decode("utf-8")
+          tipo_formato = cod.type
           fecha_hoy = date.today().strftime("%d/%m/%Y")
           usuario_logueado = st.session_state.usuario_actual.upper()
 
           st.success("✅ ¡Código Capturado!")
+
           st.markdown(
               f"""
                     <div class="card-box" style="border-left: 8px solid #28a745;">
                         <div class="row-item"><span class="col-name">Código Leído:</span> <span class="col-val">{texto_capturado}</span></div>
                         <div class="row-item"><span class="col-name">Fecha Recepción:</span> <span class="col-val">{fecha_hoy}</span></div>
+                        <div class="row-item"><span class="col-name">Ingresado Por:</span> <span class="col-val">{usuario_logueado}</span></div>
                         <div class="row-item"><span class="col-name">Área Destino:</span> <span class="col-val">{area_destino}</span></div>
                     </div>
                     """,
               unsafe_allow_html=True,
           )
 
+          # BOTÓN PARA GUARDAR EN GOOGLE SHEETS
           if st.button("☁️ Guardar en Google Sheets", type="primary", use_container_width=True):
             if not CONEXION_GOOGLE_OK:
-              st.error("❌ Faltan credenciales base de Google Sheets (requirements.txt).")
+              st.error("❌ Falta configurar las librerías de Google en la nube.")
             else:
               with st.spinner("⏳ Analizando conexión y enviando datos..."):
                   
-                  # PASO 1
+                  # 1. Verificar si el secreto existe (Diagnóstico)
                   if "google_json" not in st.secrets:
-                      st.error("🛑 DIAGNÓSTICO 1: No se encontró la llave 'google_json' en Streamlit.")
+                      st.error("🛑 DIAGNÓSTICO: No se encontró la llave 'google_json' en Streamlit secrets.")
                       st.stop()
                   
-                  # PASO 2
                   try:
-                      credenciales_dict = json.loads(st.secrets["google_json"])
-                  except Exception as e:
-                      st.error(f"🛑 DIAGNÓSTICO 2: La llave secreta en Streamlit tiene un error de sintaxis. Detalle: {e}")
-                      st.stop()
-                  
-                  # PASO 3
-                  try:
+                      # Conectar usando los Secrets de Streamlit Cloud
                       scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+                      credenciales_dict = json.loads(st.secrets["google_json"])
                       creds = ServiceAccountCredentials.from_json_keyfile_dict(credenciales_dict, scope)
                       cliente = gspread.authorize(creds)
-                  except Exception as e:
-                      st.error(f"🛑 DIAGNÓSTICO 3: Error de credenciales de Google. Detalle: {e}")
-                      st.stop()
 
-                  # PASO 4
-                  try:
+                      # Abrir archivo principal
                       hoja_calculo = cliente.open_by_url(URL_GOOGLE_SHEETS)
-                  except Exception as e:
-                      st.error(f"🛑 DIAGNÓSTICO 4 (Error 403): El Robot no tiene permiso para entrar. Verifica en el Excel que el link esté como 'Cualquier persona con el enlace' Editor. Detalle: {e}")
-                      st.stop()
-
-                  # PASO 5
-                  try:
+                      
+                      # 🛡️ TRAZABILIDAD DEFENSIVA DE PESTAÑAS
                       todas_las_pestañas = hoja_calculo.worksheets()
                       pestaña_objetivo = None
                       
+                      # Búsqueda inteligente (Ignora mayúsculas y espacios accidentales en el Excel)
                       for p in todas_las_pestañas:
                           if p.title.strip().upper() == area_destino.strip().upper():
                               pestaña_objetivo = p
                               break
                       
                       if pestaña_objetivo is None:
-                          nombres_disponibles = ", ".join([f"'{p.title}'" for p in todas_las_pestañas])
-                          st.error(f"🛑 DIAGNÓSTICO 5: No encontré la pestaña '{area_destino}'. Pestañas disponibles: {nombres_disponibles}")
-                          st.stop()
-                      
-                      nueva_fila = [
-                          "Por asignar", texto_capturado, "", "NUEVO INGRESO", 1,
-                          fecha_hoy, "", "", "", usuario_logueado,
-                          "Ingresado por App Móvil", "", ""
-                      ]
-                      
-                      pestaña_objetivo.append_row(nueva_fila)
-                      st.balloons()
-                      st.success(f"🎉 ¡ÉXITO TOTAL! Insumo '{texto_capturado}' guardado en la nube perfectamente.")
+                          st.error(f"🛑 DIAGNÓSTICO: No se encontró la pestaña '{area_destino}' en el Excel.")
+                      else:
+                          # Fila alineada con tu Excel local
+                          nueva_fila = [
+                              "Por asignar", texto_capturado, "", "NUEVO INGRESO", 1,
+                              fecha_hoy, "", "", "", usuario_logueado,
+                              "Ingresado por App Móvil", "", ""
+                          ]
+                          
+                          # Escribir en la nube mágicamente
+                          pestaña_objetivo.append_row(nueva_fila)
+                          st.balloons()
+                          st.success(f"🎉 ¡ÉXITO TOTAL! Insumo '{texto_capturado}' guardado en la nube.")
 
+                  except json.JSONDecodeError:
+                      st.error("🛑 DIAGNÓSTICO: La llave secreta en Streamlit no tiene formato JSON válido.")
                   except Exception as e:
-                      st.error(f"🛑 DIAGNÓSTICO FINAL: Ocurrió un error inesperado al escribir. Detalle: {e}")
+                      error_str = str(e)
+                      if "403" in error_str or "PERMISSION_DENIED" in error_str:
+                          st.error("🛑 DIAGNÓSTICO (Error 403): El Robot no tiene permiso en el Excel. SOLUCIÓN: En el Excel, Compartir > Cualquier persona con el enlace > Editor.")
+                      else:
+                          st.error(f"❌ Error inesperado: {error_str}")
