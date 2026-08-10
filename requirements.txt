@@ -4,3 +4,5 @@ openpyxl
 Pillow
 pyzbar
 pytesseract
+gspread
+oauth2client
