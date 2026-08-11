@@ -140,7 +140,7 @@ if logo_encontrado:
 st.markdown('<h1 class="title-text">Laboratorio Archipiélago</h1>', unsafe_allow_html=True)
 
 # ==============================================================================
-# 🔐 PANTALLA DE INICIO DE SESIÓN (RECUADRO ÚNICO LIMPIO)
+# 🔐 PANTALLA DE INICIO DE SESIÓN
 # ==============================================================================
 if not st.session_state.autenticado:
   st.markdown("<h3 style='text-align: center; margin-bottom: 15px;'>Acceso Restringido</h3>", unsafe_allow_html=True)
@@ -273,7 +273,7 @@ if consulta.strip() and df_datos is not None:
             df_resultados = df_datos[df_datos.apply(coincide_examen, axis=1)]
             
             if not df_resultados.empty:
-                # ALGORITMO DE RELEVANCIA: Elige el nombre más exacto y corto (Arregla el problema de "TSH")
+                # ALGORITMO DE RELEVANCIA (Para elegir la mejor coincidencia cuando hay sinónimos)
                 mejor_fila = None
                 mejor_puntaje = 999999
                 
@@ -364,6 +364,9 @@ if consulta.strip() and df_datos is not None:
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
                     cols_a_mostrar = list(fila.index)
+
+                # 🚫 LÓGICA NINJA: OCULTAR LA COLUMNA DE SINÓNIMOS DE LA VISTA
+                cols_a_mostrar = [c for c in cols_a_mostrar if "sinonimo" not in normalizar(str(c)) and "sinónimo" not in normalizar(str(c))]
 
                 # 💳 CREACIÓN DE LA TARJETA
                 html_card = '<div class="card-box">'
