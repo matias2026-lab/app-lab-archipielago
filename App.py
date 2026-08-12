@@ -159,61 +159,80 @@ if not st.session_state.autenticado:
   st.stop()
 
 # ==============================================================================
-# 📂 CARGA DE DATOS (EXCEL LOCAL)
+# 📂 CARGA DE DATOS SEPARADA POR HOJAS (ARQUITECTURA MULTI-HOJA)
 # ==============================================================================
 ARCHIVO_EXCEL = "APP lab archipielago 2.xlsx"
 
 @st.cache_data(ttl=2)
-def cargar_y_unificar_datos(ruta_archivo):
+def cargar_hojas_excel(ruta_archivo):
   if not os.path.exists(ruta_archivo): return None
   try:
     dict_hojas = pd.read_excel(ruta_archivo, sheet_name=None)
-    lista_dfs = [df.dropna(how="all").rename(columns=lambda c: str(c).strip()) for _, df in dict_hojas.items()]
-    return pd.concat(lista_dfs, ignore_index=True).fillna("")
+    dict_limpio = {}
+    for nombre_hoja, df in dict_hojas.items():
+        df_clean = df.dropna(how="all").rename(columns=lambda c: str(c).strip()).fillna("")
+        dict_limpio[nombre_hoja.strip()] = df_clean
+    return dict_limpio
   except Exception: return None
 
-df_datos = cargar_y_unificar_datos(ARCHIVO_EXCEL)
+dict_hojas_excel = cargar_hojas_excel(ARCHIVO_EXCEL)
 
 def normalizar(texto):
   if pd.isna(texto): return ""
   return "".join([c for c in unicodedata.normalize("NFKD", str(texto).lower()) if not unicodedata.combining(c)])
 
+def obtener_df_segun_modo(dict_hojas, es_modo_bk=False):
+    """
+    Selecciona la hoja adecuada:
+    - Normal/Suma: Solo la hoja de 'Prestaciones'
+    - Modo BK (termina en BK): Solo la hoja de 'Barnafi / BKLAB'
+    """
+    if not dict_hojas: return None
+    
+    hoja_prestaciones = None
+    hoja_bk = None
+    
+    for nombre, df in dict_hojas.items():
+        n_norm = normalizar(nombre)
+        if "barnafi" in n_norm or "bk" in n_norm:
+            hoja_bk = df
+        elif "prestac" in n_norm:
+            hoja_prestaciones = df
+            
+    if es_modo_bk:
+        if hoja_bk is not None: return hoja_bk
+        return list(dict_hojas.values())[-1] # Fallback a última hoja
+    else:
+        if hoja_prestaciones is not None: return hoja_prestaciones
+        return list(dict_hojas.values())[0] # Fallback a primera hoja
+
 # ==============================================================================
 # 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO INFALIBLE
 # ==============================================================================
 def es_columna_codigo(col_name):
-    """Evita tocar las columnas de Códigos Fonasa y Proactive."""
     c = normalizar(str(col_name))
     return "codigo" in c or "proactive" in c
 
 def es_columna_precio_fonasa(col_name):
-    """Detecta la columna Fonasa sin tocar los códigos."""
     c = normalizar(str(col_name))
     return "fonasa" in c and not es_columna_codigo(col_name)
 
 def es_columna_precio_particular(col_name):
-    """Detecta la columna Particular sin tocar los códigos."""
     c = normalizar(str(col_name))
     return ("particular" in c or "part" in c) and not es_columna_codigo(col_name)
 
 def extraer_monto_limpio(val):
-    """
-    Motor matemático a prueba de balas: 
-    Transforma $15.000, 15000, o 15000.0 en un número entero 15000.
-    """
     if pd.isna(val) or str(val).strip() == "": return 0
     try:
-        # Intenta primero leerlo como un número nativo (para arreglar el error del 15000.0)
         return int(float(val))
     except ValueError:
         pass
         
-    # Si viene como texto con símbolos ("$ 15.000")
     s_val = str(val).replace('$', '').replace(' ', '').strip()
-    s_val = s_val.replace('.', '') # Elimina el punto de los miles
+    s_val = s_val.replace('.', '')
     
     if ',' in s_val:
-        s_val = s_val.split(',')[0] # Ignora los céntimos si existieran
+        s_val = s_val.split(',')[0]
         
     try:
         return int(s_val)
@@ -221,11 +240,9 @@ def extraer_monto_limpio(val):
         return 0
 
 def formatear_pesos(monto):
-    """Transforma 15000 en $15.000"""
     return f"${int(monto):,}".replace(",", ".")
 
 def obtener_precio(fila, tipo_pago):
-    """Busca y suma solo la columna correcta."""
     fila_dict = fila.to_dict()
     precio_encontrado = 0
     if tipo_pago == "Particular":
@@ -244,22 +261,37 @@ def obtener_precio(fila, tipo_pago):
 # 🔍 INTERFAZ PRINCIPAL: BUSCADOR Y COTIZADOR
 # ==============================================================================
 
-consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="Ej: TSH fonasa | O: suma venosa y TSH")
+consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="Ej: TSH | TSH BK | O: suma venosa y TSH")
 st.divider()
 
-if consulta.strip() and df_datos is not None:
+if consulta.strip() and dict_hojas_excel is not None:
     
+    query_clean = consulta.strip()
+    
+    # Detección del comando "BK" al final (ej: "TSH BK" o "Hemograma BK")
+    es_modo_bk = bool(re.search(r'(?i)\s+bk$', query_clean) or query_clean.lower() == "bk")
+    
+    if es_modo_bk:
+        # Remover la palabra "BK" del término de búsqueda
+        query_busqueda = re.sub(r'(?i)\s+bk$', '', query_clean).strip()
+    else:
+        query_busqueda = query_clean
+        
+    # Obtener el DataFrame de la hoja correspondiente
+    df_actual = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=es_modo_bk)
+
     # ---------------------------------------------------------
-    # MODO 1: COTIZADOR AUTOMÁTICO ("suma ...")
+    # MODO 1: COTIZADOR AUTOMÁTICO ("suma ...") -> Siempre usa Prestaciones
     # ---------------------------------------------------------
-    if consulta.lower().startswith("suma "):
+    if query_busqueda.lower().startswith("suma "):
+        df_prestaciones = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=False)
+        
         st.markdown('<div class="cotizador-box">', unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center; margin-top:0; color:#d4af37;'>Cotizador de Exámenes</h3>", unsafe_allow_html=True)
         
         tipo_pago = st.radio("Selecciona la Previsión:", ["Particular", "Fonasa"], horizontal=True)
         
-        # Procesar exámenes
-        texto_examenes = consulta[5:] 
+        texto_examenes = query_busqueda[5:] 
         nombres_examenes = [x.strip() for x in re.split(r',|\by\b', texto_examenes) if x.strip()]
         
         total = 0
@@ -270,10 +302,10 @@ if consulta.strip() and df_datos is not None:
                 texto_fila = normalizar(" ".join([str(c) for c in fila.index] + [str(v) for v in fila.values]))
                 return all(term in texto_fila for term in palabras)
             
-            df_resultados = df_datos[df_datos.apply(coincide_examen, axis=1)]
+            df_resultados = df_prestaciones[df_prestaciones.apply(coincide_examen, axis=1)]
             
             if not df_resultados.empty:
-                # ALGORITMO DE RELEVANCIA (Para elegir la mejor coincidencia cuando hay sinónimos)
+                # Algoritmo de relevancia: Prioriza coincidencias en Nombre o Sinónimos
                 mejor_fila = None
                 mejor_puntaje = 999999
                 
@@ -282,9 +314,9 @@ if consulta.strip() and df_datos is not None:
                     val1 = normalizar(str(fila.values[1])) if len(fila.values) > 1 else ""
                     val_texto = val0 + " " + val1
                     
-                    puntaje = len(val_texto) # Más corto es mejor
+                    puntaje = len(val_texto)
                     for p in palabras:
-                        if p == val0 or p == val1: puntaje -= 1000 # Coincidencia exacta gana
+                        if p == val0 or p == val1: puntaje -= 1000
                         elif f" {p} " in f" {val_texto} ": puntaje -= 500
                         
                     if puntaje < mejor_puntaje:
@@ -304,21 +336,25 @@ if consulta.strip() and df_datos is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # MODO 2: BÚSQUEDA NORMAL / "MODO LÁSER"
+    # MODO 2: BÚSQUEDA NORMAL O MODO BK
     # ---------------------------------------------------------
     else:
-        palabras = [p for p in normalizar(consulta).split() if p]
+        palabras = [p for p in normalizar(query_busqueda).split() if p]
 
         def coincide_examen(fila):
             texto_fila = normalizar(" ".join([str(c) for c in fila.index] + [str(v) for v in fila.values]))
             return all(term in texto_fila for term in palabras)
 
-        df_resultados = df_datos[df_datos.apply(coincide_examen, axis=1)]
+        if df_actual is not None:
+            df_resultados = df_actual[df_actual.apply(coincide_examen, axis=1)]
+        else:
+            df_resultados = pd.DataFrame()
 
         if df_resultados.empty:
-            st.warning(f"⚠️ No se encontró información para **'{consulta}'**.")
+            origen_str = "en Exámenes BKLAB" if es_modo_bk else "en Prestaciones"
+            st.warning(f"⚠️ No se encontró información para **'{query_busqueda}'** {origen_str}.")
         else:
-            # Algoritmo de relevancia aplicado a la búsqueda normal
+            # Algoritmo de relevancia aplicado
             def calcular_puntaje(fila):
                 val0 = normalizar(str(fila.values[0]))
                 val1 = normalizar(str(fila.values[1])) if len(fila.values) > 1 else ""
@@ -334,13 +370,16 @@ if consulta.strip() and df_datos is not None:
             
             resultados_mostrar = df_resultados.head(50)
 
+            if es_modo_bk:
+                st.info("🧪 **Mostrando información de Ficha Técnica BKLAB / Barnafi**")
+
             for _, fila in resultados_mostrar.iterrows():
                 
                 # Columnas esenciales
                 cols_esenciales = []
                 for c in fila.index:
                     cn = normalizar(str(c))
-                    if any(k in cn for k in ["prestac", "examen", "nombre", "codigo", "proactive", "descripcion"]):
+                    if any(k in cn for k in ["prestac", "examen", "nombre", "codigo", "proactive", "bklab", "descripcion"]):
                         cols_esenciales.append(c)
 
                 has_fonasa = "fonasa" in palabras
@@ -365,7 +404,7 @@ if consulta.strip() and df_datos is not None:
                 else:
                     cols_a_mostrar = list(fila.index)
 
-                # 🚫 LÓGICA NINJA: OCULTAR LA COLUMNA DE SINÓNIMOS DE LA VISTA
+                # Ocultar columna de sinónimos de la tarjeta visual
                 cols_a_mostrar = [c for c in cols_a_mostrar if "sinonimo" not in normalizar(str(c)) and "sinónimo" not in normalizar(str(c))]
 
                 # 💳 CREACIÓN DE LA TARJETA
@@ -374,13 +413,11 @@ if consulta.strip() and df_datos is not None:
                     val = fila[col]
                     
                     if str(val).strip():
-                        # Da formato $10.000 SOLO a los precios
                         if (es_columna_precio_fonasa(col) or es_columna_precio_particular(col)) and extraer_monto_limpio(val) > 0:
                             val_str = formatear_pesos(extraer_monto_limpio(val))
                         else:
                             val_str = str(val)
                             
-                        # Resaltador Visual
                         col_norm = normalizar(str(col))
                         val_norm = normalizar(str(val))
                         es_buscado = any(term in col_norm or term in val_norm for term in palabras)
