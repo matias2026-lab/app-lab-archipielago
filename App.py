@@ -128,7 +128,7 @@ if not st.session_state.autenticado:
   st.stop()
 
 # ==============================================================================
-# 📂 CARGA DE DATOS (ARQUITECTURA MULTI-HOJA)
+# 📂 CARGA DE DATOS MULTI-HOJA
 # ==============================================================================
 ARCHIVO_EXCEL = "APP lab archipielago 2.xlsx"
 
@@ -198,7 +198,7 @@ def obtener_precio(fila, tipo_pago):
 # ==============================================================================
 
 consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="Ej: Calprotectina codigo | O: suma venosa y TSH")
-# NOTA: Se eliminó el st.divider() que causaba ruido visual debajo del buscador
+# ❌ LA BARRA VACÍA (st.divider) FUE ELIMINADA AQUÍ ❌
 
 if consulta.strip() and dict_hojas_excel is not None:
     
@@ -259,12 +259,10 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA GENERAL OMNIDIRECCIONAL (LEER TODAS LAS HOJAS)
+    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (LEER TODAS LAS HOJAS)
     # ---------------------------------------------------------
     else:
         palabras = [p for p in normalizar(query_clean).split() if p]
-
-        # Mega-tabla con TODAS las hojas
         df_todas_las_hojas = pd.concat(list(dict_hojas_excel.values()), ignore_index=True).fillna("")
 
         def coincide_examen(fila):
@@ -288,60 +286,85 @@ if consulta.strip() and dict_hojas_excel is not None:
 
             df_resultados['__puntaje__'] = df_resultados.apply(calcular_puntaje, axis=1)
             df_resultados = df_resultados.sort_values('__puntaje__').drop(columns=['__puntaje__'])
-            
             resultados_mostrar = df_resultados.head(50)
 
             for _, fila in resultados_mostrar.iterrows():
                 
-                # 1. 🎯 LA ÚNICA COLUMNA ESENCIAL ES EL NOMBRE
-                cols_esenciales = []
+                # 1. 🎯 IDENTIFICAR COLUMNAS DE NOMBRES/CATEGORÍAS
+                posibles_nombres = []
                 for c in fila.index:
                     cn = normalizar(str(c))
-                    if any(k in cn for k in ["prestac", "examen", "nombre"]) and "sinonimo" not in cn:
-                        cols_esenciales.append(c)
+                    if "sinonimo" in cn: continue
+                    if any(k in cn for k in ["nombre", "prestac", "examen", "descripcion"]):
+                        posibles_nombres.append(c)
+                
+                # 2. 🎯 ELEGIR EL MEJOR NOMBRE Y DESCARTAR DUPLICADOS
+                col_nombre_final = None
+                for c in posibles_nombres:
+                    if "nombre" in normalizar(str(c)):
+                        col_nombre_final = c
+                        break
+                if not col_nombre_final and posibles_nombres:
+                    col_nombre_final = posibles_nombres[0]
+                
+                # La única columna ESENCIAL ahora es el Nombre
+                cols_esenciales = [col_nombre_final] if col_nombre_final else []
 
                 has_fonasa = "fonasa" in palabras
                 has_particular = "particular" in palabras
                 has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
                 
-                # 2. 🎯 FILTRO LÁSER: QUÉ MÁS PIDIÓ EL USUARIO
+                # 3. 🎯 FILTRO LÁSER DE ESPECIFICACIONES
                 cols_especificas = []
+                palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
                 
-                # Búsqueda de dinero explícita
                 if has_fonasa and not has_particular:
                     for c in fila.index:
                         if es_columna_precio_fonasa(c): cols_especificas.append(c)
+                        else:
+                            cn = normalizar(str(c))
+                            if any(p in cn for p in palabras_filtro if p not in ["fonasa", "copago", "2026"]): cols_especificas.append(c)
+                            
                 elif has_particular and not has_fonasa:
                     for c in fila.index:
                         if es_columna_precio_particular(c): cols_especificas.append(c)
+                        else:
+                            cn = normalizar(str(c))
+                            if any(p in cn for p in palabras_filtro if p not in ["particular", "valor", "2026"]): cols_especificas.append(c)
+                            
                 elif has_precio:
                     for c in fila.index:
                         if es_columna_precio_fonasa(c) or es_columna_precio_particular(c): cols_especificas.append(c)
-                
-                # Búsqueda de cualquier otra cosa (código, tubo, horario, contenedor)
-                for c in fila.index:
-                    cn = normalizar(str(c))
-                    # Filtra y añade solo si la palabra buscada está explícitamente en el título de la columna
-                    if any(p in cn for p in palabras if len(p) > 2 and p not in ["fonasa", "particular", "precio", "valor", "perfil", "hemograma", "examen"]):
-                        cols_especificas.append(c)
+                        else:
+                            cn = normalizar(str(c))
+                            if any(p in cn for p in palabras_filtro if p not in ["fonasa", "particular", "precio", "valor", "arancel", "copago"]): cols_especificas.append(c)
+                else:
+                    # Busca cualquier otra especificación (ej: "codigo", "horario", "contenedor")
+                    for c in fila.index:
+                        cn = normalizar(str(c))
+                        if any(term in cn for term in palabras_filtro):
+                            cols_especificas.append(c)
 
-                # 3. 🎯 COMPORTAMIENTO LÁSER O ENCICLOPEDIA
+                # 4. 🎯 CONSTRUCCIÓN DE LA TARJETA
                 if cols_especificas or has_fonasa or has_particular or has_precio:
-                    # LÁSER: Mostrar solo Nombre + Lo que pidió (Oculta códigos si no los pidió)
+                    # MODO LÁSER: Mostrar Solo Nombre + Lo que pidió explícitamente
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
-                    # ENCICLOPEDIA: Mostramos toda la fila porque no especificó nada
-                    cols_a_mostrar = list(fila.index)
+                    # MODO ENCICLOPEDIA: Mostrar todo EXCEPTO los nombres duplicados
+                    cols_a_mostrar = []
+                    for c in fila.index:
+                        if c in posibles_nombres and c != col_nombre_final:
+                            continue # Ocultamos la columna repetida (ej. "PRESTACION")
+                        cols_a_mostrar.append(c)
 
-                # Ocultar siempre la columna técnica de sinónimos
+                # Siempre ocultar sinónimos
                 cols_a_mostrar = [c for c in cols_a_mostrar if "sinonimo" not in normalizar(str(c)) and "sinónimo" not in normalizar(str(c))]
 
-                # 💳 RENDERIZADO DE LA TARJETA
+                # 💳 RENDERIZADO VISUAL
                 html_card = '<div class="card-box">'
                 for col in cols_a_mostrar:
                     val = fila[col]
                     
-                    # Ignorar celdas vacías para mantener la tarjeta compacta
                     if str(val).strip() != "":
                         if (es_columna_precio_fonasa(col) or es_columna_precio_particular(col)) and extraer_monto_limpio(val) > 0:
                             val_str = formatear_pesos(extraer_monto_limpio(val))
