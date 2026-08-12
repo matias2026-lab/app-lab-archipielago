@@ -198,7 +198,6 @@ def obtener_precio(fila, tipo_pago):
 # ==============================================================================
 
 consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="Ej: Calprotectina codigo | O: suma venosa y TSH")
-# ❌ LA BARRA VACÍA (st.divider) FUE ELIMINADA AQUÍ ❌
 
 if consulta.strip() and dict_hojas_excel is not None:
     
@@ -295,7 +294,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                 for c in fila.index:
                     cn = normalizar(str(c))
                     if "sinonimo" in cn: continue
-                    if any(k in cn for k in ["nombre", "prestac", "examen", "descripcion"]):
+                    if "nombre" in cn or "prestac" in cn or cn == "examen":
                         posibles_nombres.append(c)
                 
                 # 2. 🎯 ELEGIR EL MEJOR NOMBRE Y DESCARTAR DUPLICADOS
@@ -339,7 +338,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                             cn = normalizar(str(c))
                             if any(p in cn for p in palabras_filtro if p not in ["fonasa", "particular", "precio", "valor", "arancel", "copago"]): cols_especificas.append(c)
                 else:
-                    # Busca cualquier otra especificación (ej: "codigo", "horario", "contenedor")
                     for c in fila.index:
                         cn = normalizar(str(c))
                         if any(term in cn for term in palabras_filtro):
@@ -351,17 +349,18 @@ if consulta.strip() and dict_hojas_excel is not None:
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
                     # MODO ENCICLOPEDIA: Mostrar todo EXCEPTO los nombres duplicados
-                    cols_a_mostrar = []
-                    for c in fila.index:
-                        if c in posibles_nombres and c != col_nombre_final:
-                            continue # Ocultamos la columna repetida (ej. "PRESTACION")
-                        cols_a_mostrar.append(c)
+                    cols_a_mostrar = list(fila.index)
 
-                # Siempre ocultar sinónimos
-                cols_a_mostrar = [c for c in cols_a_mostrar if "sinonimo" not in normalizar(str(c)) and "sinónimo" not in normalizar(str(c))]
+                # 🚫 ELIMINAR COLUMNAS DE NOMBRES DUPLICADOS Y SINÓNIMOS
+                cols_a_mostrar = [
+                    c for c in cols_a_mostrar 
+                    if (c not in posibles_nombres or c == col_nombre_final) 
+                    and "sinonimo" not in normalizar(str(c)) 
+                    and "sinónimo" not in normalizar(str(c))
+                ]
 
                 # 💳 RENDERIZADO VISUAL
-                html_card = '<div class="card-box">'
+                contenido_tarjeta = ""
                 for col in cols_a_mostrar:
                     val = fila[col]
                     
@@ -376,6 +375,8 @@ if consulta.strip() and dict_hojas_excel is not None:
                         es_buscado = any(term in col_norm or term in val_norm for term in palabras)
                         estilo = "background-color: rgba(212, 175, 55, 0.15); border-left: 4px solid #d4af37;" if es_buscado else ""
                         
-                        html_card += f'<div class="row-item" style="{estilo}"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
+                        contenido_tarjeta += f'<div class="row-item" style="{estilo}"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
                 
-                st.markdown(html_card + "</div>", unsafe_allow_html=True)
+                # 🚫 SEGURO ANTI-BARRAS VACÍAS: SOLO SE DIBUJA LA TARJETA SI TIENE INFORMACIÓN ÚTIL
+                if contenido_tarjeta.strip() != "":
+                    st.markdown(f'<div class="card-box">{contenido_tarjeta}</div>', unsafe_allow_html=True)
