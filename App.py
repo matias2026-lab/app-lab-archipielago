@@ -44,71 +44,40 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PURIFICADOS (Login Limpio y Alto Contraste)
+# 🎨 ESTILOS CSS PURIFICADOS
 # ==============================================================================
 st.markdown(
     """
     <style>
-    /* Bloqueo PWA Nativo */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     .stApp { background-color: #6a1b29; color: #ffffff; }
     
-    /* 🚫 ELIMINAR BRANDING STREAMLIT 🚫 */
     footer, #MainMenu, header, .stActionButton, .stDeployButton { display: none !important; visibility: hidden !important; }
     [data-testid="InputInstructions"], [data-testid="stInputInstructions"], div[class*="InputInstructions"], .stTextInput small, .st-emotion-cache-1c7y2kd { display: none !important; opacity: 0 !important; visibility: hidden !important; }
     
-    /* 🌟 RECUADRO ÚNICO PARA EL LOGIN (FONDO TRANSPARENTE) */
-    div[data-testid="stForm"] {
-        background-color: transparent !important;
-        border: 2px solid #d4af37 !important;
-        border-radius: 16px !important;
-        padding: 25px 20px !important;
-    }
+    div[data-testid="stForm"] { background-color: transparent !important; border: 2px solid #d4af37 !important; border-radius: 16px !important; padding: 25px 20px !important; }
+    .stTextInput label p, .stTextInput label, label { color: #ffffff !important; font-weight: 700 !important; font-size: 16px !important; }
     
-    /* FIX CONTRASTE TEXTOS LOGIN */
-    .stTextInput label p, .stTextInput label, label { 
-        color: #ffffff !important; 
-        font-weight: 700 !important; 
-        font-size: 16px !important; 
-    }
-    
-    /* FIX BOTÓN CERRAR SESIÓN Y LOGIN (ALTO CONTRASTE) */
     div[data-testid="stButton"] > button, div[data-testid="stFormSubmitButton"] > button {
-        background-color: #48121b !important;
-        color: #ffffff !important;
-        border: 1.5px solid #d4af37 !important;
-        border-radius: 10px !important;
-        font-weight: 700 !important;
-        font-size: 15px !important;
-        padding: 8px 16px !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
-        transition: 0.2s;
-        width: 100% !important;
-        margin-top: 10px !important;
+        background-color: #48121b !important; color: #ffffff !important; border: 1.5px solid #d4af37 !important; border-radius: 10px !important;
+        font-weight: 700 !important; font-size: 15px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+        transition: 0.2s; width: 100% !important; margin-top: 10px !important;
     }
-    div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active {
-        background-color: #6a1b29 !important;
-        color: #d4af37 !important;
-        border-color: #ffffff !important;
-    }
+    div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* BARRA SUPERIOR */
     [data-testid="stHeader"] { background-color: transparent !important; visibility: visible !important; height: 50px !important; }
     
-    /* BUSCADOR PRINCIPAL */
     div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stTextInput"]) { position: -webkit-sticky !important; position: sticky !important; top: 10px !important; z-index: 9999 !important; background-color: #6a1b29 !important; padding: 10px 5px !important; border-radius: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important; }
     div[data-baseweb="input"], div[data-baseweb="base-input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; border: none !important; }
     div[data-baseweb="input"] input { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-size: 16px !important; padding: 12px 18px !important; }
     
-    /* TARJETAS DE RESULTADOS */
     .card-box { background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 25px; border-radius: 12px; border-left: 8px solid #d4af37; margin-bottom: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); }
     .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; border-radius: 6px; padding: 4px 6px;}
     .col-name { font-weight: 700; color: #6a1b29 !important; }
     .col-val { color: #222222 !important; font-weight: 500; }
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
-    /* COTIZADOR INVISIBLE */
     .cotizador-box { margin-bottom: 20px; padding-top: 10px; }
     </style>
     """,
@@ -119,7 +88,7 @@ def obtener_img_base64(ruta_imagen):
   with open(ruta_imagen, "rb") as f:
     return base64.b64encode(f.read()).decode()
 
-# ----------------- BARRA SUPERIOR (BOTÓN CERRAR SESIÓN) -----------------
+# ----------------- BARRA SUPERIOR -----------------
 if st.session_state.autenticado:
     col_espacio, col_salir = st.columns([0.6, 0.4])
     with col_salir:
@@ -159,7 +128,7 @@ if not st.session_state.autenticado:
   st.stop()
 
 # ==============================================================================
-# 📂 CARGA DE DATOS SEPARADA POR HOJAS
+# 📂 CARGA DE DATOS (ARQUITECTURA MULTI-HOJA)
 # ==============================================================================
 ARCHIVO_EXCEL = "APP lab archipielago 2.xlsx"
 
@@ -182,105 +151,64 @@ def normalizar(texto):
   return "".join([c for c in unicodedata.normalize("NFKD", str(texto).lower()) if not unicodedata.combining(c)])
 
 def obtener_df_segun_modo(dict_hojas, es_modo_bk=False):
+    """Devuelve la hoja de Prestaciones para la suma."""
     if not dict_hojas: return None
     hoja_prestaciones = None
-    hoja_bk = None
-    
     for nombre, df in dict_hojas.items():
-        n_norm = normalizar(nombre)
-        if "barnafi" in n_norm or "bk" in n_norm:
-            hoja_bk = df
-        elif "prestac" in n_norm:
+        if "prestac" in normalizar(nombre):
             hoja_prestaciones = df
-            
-    if es_modo_bk:
-        if hoja_bk is not None: return hoja_bk
-        return list(dict_hojas.values())[-1] 
-    else:
-        if hoja_prestaciones is not None: return hoja_prestaciones
-        return list(dict_hojas.values())[0] 
+    return hoja_prestaciones if hoja_prestaciones is not None else list(dict_hojas.values())[0]
 
 # ==============================================================================
-# 🛠️ MATEMÁTICA EXTREMA A PRUEBA DE FORMATOS EXCEL (Puntos y Comas)
+# 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO (INTACTO Y PERFECTO) 🔒
 # ==============================================================================
 def es_columna_precio_fonasa(col_name):
-    """Busca exactamente la columna de COPAGO FONASA 2026."""
     c = normalizar(str(col_name))
     return "copago fonasa 2026" in c or ("copago" in c and "fonasa" in c and "2026" in c)
 
 def es_columna_precio_particular(col_name):
-    """Busca exactamente la columna de VALOR PARTICULAR 2026."""
     c = normalizar(str(col_name))
     return "valor particular 2026" in c or ("valor" in c and "particular" in c and "2026" in c)
 
 def extraer_monto_limpio(val):
-    """
-    Destruye cualquier formato, comas o puntos, y entrega el número puro.
-    Ej: "5.420" -> 5420 | "5,420" -> 5420 | 5420.0 -> 5420 | "$ 5.420" -> 5420
-    """
     if pd.isna(val) or str(val).strip() == "": return 0
-    
-    # 1. Si es número puro de Python
-    if isinstance(val, (int, float)):
-        return int(val)
-        
-    # 2. Pasamos a texto y limpiamos signos
+    if isinstance(val, (int, float)): return int(val)
     s_val = str(val).replace('$', '').replace(' ', '').strip()
-    
-    # 3. Quitamos decimales fantasmas (.0, .00, ,0, ,00) al final del string
-    s_val = re.sub(r'[,.]00$', '', s_val)
-    s_val = re.sub(r'[,.]0$', '', s_val)
-    
-    # 4. AHORA SÍ: Destruimos todos los puntos y comas restantes
-    # (Ya que en plata chilena no hay centavos, cualquier punto o coma es un separador de miles)
+    if s_val.endswith('.0'): s_val = s_val[:-2]
+    if s_val.endswith('.00'): s_val = s_val[:-3]
     s_val = s_val.replace('.', '').replace(',', '')
-    
-    # 5. Rescatamos los números finales
     numeros = re.findall(r'\d+', s_val)
-    if numeros:
-        return int(numeros[0])
+    if numeros: return int(numeros[0])
     return 0
 
 def formatear_pesos(monto):
-    """Devuelve el formato limpio $15.000"""
     return f"${int(monto):,}".replace(",", ".")
 
 def obtener_precio(fila, tipo_pago):
-    """Filtra y devuelve solo el monto solicitado sin confusiones."""
     fila_dict = fila.to_dict()
     if tipo_pago == "Particular":
         for col, val in fila_dict.items():
-            if es_columna_precio_particular(col):
-                return extraer_monto_limpio(val)
-    else: # Fonasa
+            if es_columna_precio_particular(col): return extraer_monto_limpio(val)
+    else: 
         for col, val in fila_dict.items():
-            if es_columna_precio_fonasa(col):
-                return extraer_monto_limpio(val)
+            if es_columna_precio_fonasa(col): return extraer_monto_limpio(val)
     return 0
 
 # ==============================================================================
 # 🔍 INTERFAZ PRINCIPAL: BUSCADOR Y COTIZADOR
 # ==============================================================================
 
-consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="Ej: TSH | TSH BK | O: suma venosa y TSH")
+consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="Ej: Calprotectina horario | O: suma venosa y TSH")
 st.divider()
 
 if consulta.strip() and dict_hojas_excel is not None:
     
     query_clean = consulta.strip()
-    es_modo_bk = bool(re.search(r'(?i)\s+bk$', query_clean) or query_clean.lower() == "bk")
-    
-    if es_modo_bk:
-        query_busqueda = re.sub(r'(?i)\s+bk$', '', query_clean).strip()
-    else:
-        query_busqueda = query_clean
-        
-    df_actual = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=es_modo_bk)
 
     # ---------------------------------------------------------
-    # MODO 1: COTIZADOR AUTOMÁTICO ("suma ...") 
+    # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (INTACTO - SOLO PRESTACIONES)
     # ---------------------------------------------------------
-    if query_busqueda.lower().startswith("suma "):
+    if query_clean.lower().startswith("suma "):
         df_prestaciones = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=False)
         
         st.markdown('<div class="cotizador-box">', unsafe_allow_html=True)
@@ -288,7 +216,7 @@ if consulta.strip() and dict_hojas_excel is not None:
         
         tipo_pago = st.radio("Selecciona la Previsión:", ["Particular", "Fonasa"], horizontal=True)
         
-        texto_examenes = query_busqueda[5:] 
+        texto_examenes = query_clean[5:] 
         nombres_examenes = [x.strip() for x in re.split(r',|\by\b', texto_examenes) if x.strip()]
         
         total = 0
@@ -302,7 +230,6 @@ if consulta.strip() and dict_hojas_excel is not None:
             df_resultados = df_prestaciones[df_prestaciones.apply(coincide_examen, axis=1)]
             
             if not df_resultados.empty:
-                # Algoritmo de relevancia: Prioriza coincidencias exactas
                 mejor_fila = None
                 mejor_puntaje = 999999
                 
@@ -333,23 +260,23 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # MODO 2: BÚSQUEDA NORMAL O MODO BK
+    # 🌟 MODO 2: BÚSQUEDA GENERAL OMNIDIRECCIONAL (LEER TODAS LAS HOJAS)
     # ---------------------------------------------------------
     else:
-        palabras = [p for p in normalizar(query_busqueda).split() if p]
+        palabras = [p for p in normalizar(query_clean).split() if p]
+
+        # 🚀 CREAMOS UNA MEGA-TABLA CON TODAS LAS HOJAS DEL EXCEL
+        df_todas_las_hojas = pd.concat(list(dict_hojas_excel.values()), ignore_index=True).fillna("")
 
         def coincide_examen(fila):
+            # Une los títulos de las columnas y los valores para poder encontrar "horario" o "contenedor"
             texto_fila = normalizar(" ".join([str(c) for c in fila.index] + [str(v) for v in fila.values]))
             return all(term in texto_fila for term in palabras)
 
-        if df_actual is not None:
-            df_resultados = df_actual[df_actual.apply(coincide_examen, axis=1)]
-        else:
-            df_resultados = pd.DataFrame()
+        df_resultados = df_todas_las_hojas[df_todas_las_hojas.apply(coincide_examen, axis=1)]
 
         if df_resultados.empty:
-            origen_str = "en Exámenes BKLAB" if es_modo_bk else "en Prestaciones"
-            st.warning(f"⚠️ No se encontró información para **'{query_busqueda}'** {origen_str}.")
+            st.warning(f"⚠️ No se encontró información para **'{query_clean}'** en ninguna hoja.")
         else:
             def calcular_puntaje(fila):
                 val0 = normalizar(str(fila.values[0]))
@@ -366,11 +293,9 @@ if consulta.strip() and dict_hojas_excel is not None:
             
             resultados_mostrar = df_resultados.head(50)
 
-            if es_modo_bk:
-                st.info("🧪 **Mostrando información de Ficha Técnica BKLAB / Barnafi**")
-
             for _, fila in resultados_mostrar.iterrows():
                 
+                # 1. Columnas esenciales que siempre se muestran
                 cols_esenciales = []
                 for c in fila.index:
                     cn = normalizar(str(c))
@@ -380,33 +305,45 @@ if consulta.strip() and dict_hojas_excel is not None:
                 has_fonasa = "fonasa" in palabras
                 has_particular = "particular" in palabras
                 
+                # 2. Filtro Láser de Especificaciones
                 cols_especificas = []
                 if has_fonasa and not has_particular:
                     for c in fila.index:
                         if es_columna_precio_fonasa(c): cols_especificas.append(c)
+                        else:
+                            cn = normalizar(str(c))
+                            if any(p in cn for p in palabras if p not in ["fonasa", "copago", "2026"]): cols_especificas.append(c)
+                            
                 elif has_particular and not has_fonasa:
                     for c in fila.index:
                         if es_columna_precio_particular(c): cols_especificas.append(c)
+                        else:
+                            cn = normalizar(str(c))
+                            if any(p in cn for p in palabras if p not in ["particular", "valor", "2026"]): cols_especificas.append(c)
                 else:
+                    # Busca cualquier otra especificación (horario, contenedor, dias, etc)
                     for c in fila.index:
                         cn = normalizar(str(c))
                         if any(term in cn for term in palabras if term not in ["perfil", "hemograma", "examen"]):
                             cols_especificas.append(c)
 
+                # 3. Decidir qué mostrar
                 if cols_especificas:
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
+                    # Si no hay especificación (ej: solo buscó "calprotectina"), mostramos TODO
                     cols_a_mostrar = list(fila.index)
 
-                # Ocultar columna de sinónimos de la visualización
+                # Ocultar la columna secreta de sinónimos
                 cols_a_mostrar = [c for c in cols_a_mostrar if "sinonimo" not in normalizar(str(c)) and "sinónimo" not in normalizar(str(c))]
 
+                # 💳 RENDERIZADO DE LA TARJETA
                 html_card = '<div class="card-box">'
                 for col in cols_a_mostrar:
                     val = fila[col]
                     
-                    if str(val).strip():
-                        # Si es columna de precio, limpia todo y da formato $15.000
+                    # Evitamos imprimir filas que estén completamente vacías
+                    if str(val).strip() != "":
                         if (es_columna_precio_fonasa(col) or es_columna_precio_particular(col)) and extraer_monto_limpio(val) > 0:
                             val_str = formatear_pesos(extraer_monto_limpio(val))
                         else:
