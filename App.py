@@ -68,7 +68,7 @@ st.markdown(
 
     [data-testid="stHeader"] { background-color: transparent !important; visibility: visible !important; height: 50px !important; }
     
-    div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stTextInput"]) { position: -webkit-sticky !important; position: sticky !important; top: 10px !important; z-index: 9999 !important; background-color: #6a1b29 !important; padding: 10px 5px !important; border-radius: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important; }
+    div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stTextInput"]) { position: -webkit-sticky !important; position: sticky !important; top: 10px !important; z-index: 9999 !important; background-color: #6a1b29 !important; padding: 10px 5px !important; border-radius: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important; margin-bottom: 20px !important;}
     div[data-baseweb="input"], div[data-baseweb="base-input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; border: none !important; }
     div[data-baseweb="input"] input { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-size: 16px !important; padding: 12px 18px !important; }
     
@@ -151,7 +151,6 @@ def normalizar(texto):
   return "".join([c for c in unicodedata.normalize("NFKD", str(texto).lower()) if not unicodedata.combining(c)])
 
 def obtener_df_segun_modo(dict_hojas, es_modo_bk=False):
-    """Devuelve la hoja de Prestaciones para la suma."""
     if not dict_hojas: return None
     hoja_prestaciones = None
     for nombre, df in dict_hojas.items():
@@ -160,7 +159,7 @@ def obtener_df_segun_modo(dict_hojas, es_modo_bk=False):
     return hoja_prestaciones if hoja_prestaciones is not None else list(dict_hojas.values())[0]
 
 # ==============================================================================
-# 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO (INTACTO Y PERFECTO) 🔒
+# 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO (INTACTO 100%) 🔒
 # ==============================================================================
 def es_columna_precio_fonasa(col_name):
     c = normalizar(str(col_name))
@@ -198,8 +197,8 @@ def obtener_precio(fila, tipo_pago):
 # 🔍 INTERFAZ PRINCIPAL: BUSCADOR Y COTIZADOR
 # ==============================================================================
 
-consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="Ej: Calprotectina horario | O: suma venosa y TSH")
-st.divider()
+consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="Ej: Calprotectina codigo | O: suma venosa y TSH")
+# NOTA: Se eliminó el st.divider() que causaba ruido visual debajo del buscador
 
 if consulta.strip() and dict_hojas_excel is not None:
     
@@ -265,11 +264,10 @@ if consulta.strip() and dict_hojas_excel is not None:
     else:
         palabras = [p for p in normalizar(query_clean).split() if p]
 
-        # 🚀 CREAMOS UNA MEGA-TABLA CON TODAS LAS HOJAS DEL EXCEL
+        # Mega-tabla con TODAS las hojas
         df_todas_las_hojas = pd.concat(list(dict_hojas_excel.values()), ignore_index=True).fillna("")
 
         def coincide_examen(fila):
-            # Une los títulos de las columnas y los valores para poder encontrar "horario" o "contenedor"
             texto_fila = normalizar(" ".join([str(c) for c in fila.index] + [str(v) for v in fila.values]))
             return all(term in texto_fila for term in palabras)
 
@@ -295,46 +293,47 @@ if consulta.strip() and dict_hojas_excel is not None:
 
             for _, fila in resultados_mostrar.iterrows():
                 
-                # 1. Columnas esenciales que siempre se muestran
+                # 1. 🎯 LA ÚNICA COLUMNA ESENCIAL ES EL NOMBRE
                 cols_esenciales = []
                 for c in fila.index:
                     cn = normalizar(str(c))
-                    if any(k in cn for k in ["prestac", "examen", "nombre", "codigo", "proactive", "bklab", "descripcion"]):
+                    if any(k in cn for k in ["prestac", "examen", "nombre"]) and "sinonimo" not in cn:
                         cols_esenciales.append(c)
 
                 has_fonasa = "fonasa" in palabras
                 has_particular = "particular" in palabras
+                has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
                 
-                # 2. Filtro Láser de Especificaciones
+                # 2. 🎯 FILTRO LÁSER: QUÉ MÁS PIDIÓ EL USUARIO
                 cols_especificas = []
+                
+                # Búsqueda de dinero explícita
                 if has_fonasa and not has_particular:
                     for c in fila.index:
                         if es_columna_precio_fonasa(c): cols_especificas.append(c)
-                        else:
-                            cn = normalizar(str(c))
-                            if any(p in cn for p in palabras if p not in ["fonasa", "copago", "2026"]): cols_especificas.append(c)
-                            
                 elif has_particular and not has_fonasa:
                     for c in fila.index:
                         if es_columna_precio_particular(c): cols_especificas.append(c)
-                        else:
-                            cn = normalizar(str(c))
-                            if any(p in cn for p in palabras if p not in ["particular", "valor", "2026"]): cols_especificas.append(c)
-                else:
-                    # Busca cualquier otra especificación (horario, contenedor, dias, etc)
+                elif has_precio:
                     for c in fila.index:
-                        cn = normalizar(str(c))
-                        if any(term in cn for term in palabras if term not in ["perfil", "hemograma", "examen"]):
-                            cols_especificas.append(c)
+                        if es_columna_precio_fonasa(c) or es_columna_precio_particular(c): cols_especificas.append(c)
+                
+                # Búsqueda de cualquier otra cosa (código, tubo, horario, contenedor)
+                for c in fila.index:
+                    cn = normalizar(str(c))
+                    # Filtra y añade solo si la palabra buscada está explícitamente en el título de la columna
+                    if any(p in cn for p in palabras if len(p) > 2 and p not in ["fonasa", "particular", "precio", "valor", "perfil", "hemograma", "examen"]):
+                        cols_especificas.append(c)
 
-                # 3. Decidir qué mostrar
-                if cols_especificas:
+                # 3. 🎯 COMPORTAMIENTO LÁSER O ENCICLOPEDIA
+                if cols_especificas or has_fonasa or has_particular or has_precio:
+                    # LÁSER: Mostrar solo Nombre + Lo que pidió (Oculta códigos si no los pidió)
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
-                    # Si no hay especificación (ej: solo buscó "calprotectina"), mostramos TODO
+                    # ENCICLOPEDIA: Mostramos toda la fila porque no especificó nada
                     cols_a_mostrar = list(fila.index)
 
-                # Ocultar la columna secreta de sinónimos
+                # Ocultar siempre la columna técnica de sinónimos
                 cols_a_mostrar = [c for c in cols_a_mostrar if "sinonimo" not in normalizar(str(c)) and "sinónimo" not in normalizar(str(c))]
 
                 # 💳 RENDERIZADO DE LA TARJETA
@@ -342,7 +341,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                 for col in cols_a_mostrar:
                     val = fila[col]
                     
-                    # Evitamos imprimir filas que estén completamente vacías
+                    # Ignorar celdas vacías para mantener la tarjeta compacta
                     if str(val).strip() != "":
                         if (es_columna_precio_fonasa(col) or es_columna_precio_particular(col)) and extraer_monto_limpio(val) > 0:
                             val_str = formatear_pesos(extraer_monto_limpio(val))
