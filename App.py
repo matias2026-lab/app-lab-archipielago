@@ -201,53 +201,52 @@ def obtener_df_segun_modo(dict_hojas, es_modo_bk=False):
         return list(dict_hojas.values())[0] 
 
 # ==============================================================================
-# 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO (¡CORREGIDO PARA CHILE!)
+# 🛠️ MATEMÁTICA EXTREMA A PRUEBA DE FORMATOS EXCEL (Puntos y Comas)
 # ==============================================================================
 def es_columna_precio_fonasa(col_name):
-    """Busca estrictamente la columna 'COPAGO FONASA 2026'."""
+    """Busca exactamente la columna de COPAGO FONASA 2026."""
     c = normalizar(str(col_name))
-    return "copago" in c and "fonasa" in c
+    return "copago fonasa 2026" in c or ("copago" in c and "fonasa" in c and "2026" in c)
 
 def es_columna_precio_particular(col_name):
-    """Busca estrictamente la columna 'VALOR PARTICULAR 2026'."""
+    """Busca exactamente la columna de VALOR PARTICULAR 2026."""
     c = normalizar(str(col_name))
-    return "particular" in c
+    return "valor particular 2026" in c or ("valor" in c and "particular" in c and "2026" in c)
 
 def extraer_monto_limpio(val):
     """
-    CORRECCIÓN CRÍTICA: Convierte correctamente el formato "5.420" a 5420.
-    Evita que Python lo lea como decimal (5.42 -> 5 pesos).
+    Destruye cualquier formato, comas o puntos, y entrega el número puro.
+    Ej: "5.420" -> 5420 | "5,420" -> 5420 | 5420.0 -> 5420 | "$ 5.420" -> 5420
     """
     if pd.isna(val) or str(val).strip() == "": return 0
     
-    # Si ya es un número nativo en Python (int o float sin formato de texto)
+    # 1. Si es número puro de Python
     if isinstance(val, (int, float)):
         return int(val)
         
-    # Si viene como texto (ej. "5.420" o "$ 5.420")
+    # 2. Pasamos a texto y limpiamos signos
     s_val = str(val).replace('$', '').replace(' ', '').strip()
     
-    # Quitamos posibles decimales nulos que deja pandas al leer (ej: "15000.0")
-    if s_val.endswith('.0'): s_val = s_val[:-2]
-    if s_val.endswith('.00'): s_val = s_val[:-3]
+    # 3. Quitamos decimales fantasmas (.0, .00, ,0, ,00) al final del string
+    s_val = re.sub(r'[,.]00$', '', s_val)
+    s_val = re.sub(r'[,.]0$', '', s_val)
     
-    # ¡AQUÍ ESTABA EL TRUCO! Quitamos los puntos de miles (chilenos)
-    s_val = s_val.replace('.', '')
+    # 4. AHORA SÍ: Destruimos todos los puntos y comas restantes
+    # (Ya que en plata chilena no hay centavos, cualquier punto o coma es un separador de miles)
+    s_val = s_val.replace('.', '').replace(',', '')
     
-    # Si hubiera una coma de centavos reales (ej: 15000,50), cortamos en la coma
-    if ',' in s_val:
-        s_val = s_val.split(',')[0]
-        
-    try:
-        return int(s_val)
-    except ValueError:
-        return 0
+    # 5. Rescatamos los números finales
+    numeros = re.findall(r'\d+', s_val)
+    if numeros:
+        return int(numeros[0])
+    return 0
 
 def formatear_pesos(monto):
+    """Devuelve el formato limpio $15.000"""
     return f"${int(monto):,}".replace(",", ".")
 
 def obtener_precio(fila, tipo_pago):
-    """Busca y extrae el precio de la columna EXACTA solicitada."""
+    """Filtra y devuelve solo el monto solicitado sin confusiones."""
     fila_dict = fila.to_dict()
     if tipo_pago == "Particular":
         for col, val in fila_dict.items():
@@ -269,8 +268,6 @@ st.divider()
 if consulta.strip() and dict_hojas_excel is not None:
     
     query_clean = consulta.strip()
-    
-    # Detección del comando "BK" al final
     es_modo_bk = bool(re.search(r'(?i)\s+bk$', query_clean) or query_clean.lower() == "bk")
     
     if es_modo_bk:
@@ -305,7 +302,7 @@ if consulta.strip() and dict_hojas_excel is not None:
             df_resultados = df_prestaciones[df_prestaciones.apply(coincide_examen, axis=1)]
             
             if not df_resultados.empty:
-                # Algoritmo de relevancia
+                # Algoritmo de relevancia: Prioriza coincidencias exactas
                 mejor_fila = None
                 mejor_puntaje = 999999
                 
@@ -409,7 +406,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                     val = fila[col]
                     
                     if str(val).strip():
-                        # Si es columna de plata, le aplicamos el formato
+                        # Si es columna de precio, limpia todo y da formato $15.000
                         if (es_columna_precio_fonasa(col) or es_columna_precio_particular(col)) and extraer_monto_limpio(val) > 0:
                             val_str = formatear_pesos(extraer_monto_limpio(val))
                         else:
