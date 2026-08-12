@@ -25,10 +25,10 @@ for posible_nombre in ["logo lab.png", "logo.png", "logo lab.webp", "logo.webp"]
 st.set_page_config(page_title="Lab Archipiélago", page_icon=icono_app, layout="centered")
 
 # ==============================================================================
-# 🔐 CONFIGURACIÓN DE USUARIOS (ACTUALIZADO 659)
+# 🔐 CONFIGURACIÓN DE USUARIOS (CONTRASEÑA ACTUALIZADA)
 # ==============================================================================
 USUARIOS = {
-    "659": "lab2026", # ✅ Nuevo usuario solicitado
+    "659": "12345", # ✅ Usuario 659 con contraseña 12345
 }
 
 if "autenticado" not in st.session_state:
@@ -36,7 +36,6 @@ if "autenticado" not in st.session_state:
 if "usuario_actual" not in st.session_state:
   st.session_state.usuario_actual = ""
 
-# Persistencia básica por URL
 params = st.query_params
 if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.autenticado = True
@@ -115,15 +114,12 @@ if logo_encontrado:
 st.markdown('<h1 class="title-text">Laboratorio Archipiélago</h1>', unsafe_allow_html=True)
 
 # ==============================================================================
-# 🔐 PANTALLA DE INICIO DE SESIÓN (MODIFICADA)
+# 🔐 PANTALLA DE INICIO DE SESIÓN
 # ==============================================================================
 if not st.session_state.autenticado:
-  # ❌ Se eliminó el texto "Acceso Restringido" aquí ❌
-  
   col_vacia1, col_login, col_vacia2 = st.columns([0.05, 2.9, 0.05])
   with col_login:
     with st.form("form_login", clear_on_submit=False):
-      # ❌ Se eliminó el placeholder de usuario ❌
       usuario_input = st.text_input("Usuario", placeholder="").strip()
       clave_input = st.text_input("Contraseña", type="password").strip()
       if st.form_submit_button("Iniciar Sesión", use_container_width=True):
@@ -205,7 +201,6 @@ def obtener_precio(fila, tipo_pago):
 # 🔍 INTERFAZ PRINCIPAL: BUSCADOR Y COTIZADOR
 # ==============================================================================
 
-# ❌ Se eliminó el placeholder de búsqueda ❌
 consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="")
 
 if consulta.strip() and dict_hojas_excel is not None:
