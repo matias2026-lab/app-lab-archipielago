@@ -25,12 +25,10 @@ for posible_nombre in ["logo lab.png", "logo.png", "logo lab.webp", "logo.webp"]
 st.set_page_config(page_title="Lab Archipiélago", page_icon=icono_app, layout="centered")
 
 # ==============================================================================
-# 🔐 CONFIGURACIÓN DE USUARIOS
+# 🔐 CONFIGURACIÓN DE USUARIOS (ACTUALIZADO 659)
 # ==============================================================================
 USUARIOS = {
-    "recepcion": "lab2026",
-    "tecnologo": "12345",
-    "admin": "admin1234",
+    "659": "lab2026", # ✅ Nuevo usuario solicitado
 }
 
 if "autenticado" not in st.session_state:
@@ -38,6 +36,7 @@ if "autenticado" not in st.session_state:
 if "usuario_actual" not in st.session_state:
   st.session_state.usuario_actual = ""
 
+# Persistencia básica por URL
 params = st.query_params
 if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.autenticado = True
@@ -49,16 +48,20 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
 st.markdown(
     """
     <style>
+    /* Bloqueo PWA Nativo */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     .stApp { background-color: #6a1b29; color: #ffffff; }
     
+    /* ELIMINAR BRANDING STREAMLIT */
     footer, #MainMenu, header, .stActionButton, .stDeployButton { display: none !important; visibility: hidden !important; }
     [data-testid="InputInstructions"], [data-testid="stInputInstructions"], div[class*="InputInstructions"], .stTextInput small, .st-emotion-cache-1c7y2kd { display: none !important; opacity: 0 !important; visibility: hidden !important; }
     
+    /* RECUADRO ÚNICO PARA EL LOGIN */
     div[data-testid="stForm"] { background-color: transparent !important; border: 2px solid #d4af37 !important; border-radius: 16px !important; padding: 25px 20px !important; }
     .stTextInput label p, .stTextInput label, label { color: #ffffff !important; font-weight: 700 !important; font-size: 16px !important; }
     
+    /* BOTONES ALTO CONTRASTE */
     div[data-testid="stButton"] > button, div[data-testid="stFormSubmitButton"] > button {
         background-color: #48121b !important; color: #ffffff !important; border: 1.5px solid #d4af37 !important; border-radius: 10px !important;
         font-weight: 700 !important; font-size: 15px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
@@ -68,10 +71,12 @@ st.markdown(
 
     [data-testid="stHeader"] { background-color: transparent !important; visibility: visible !important; height: 50px !important; }
     
+    /* BUSCADOR FIJO SUPERIOR */
     div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stTextInput"]) { position: -webkit-sticky !important; position: sticky !important; top: 10px !important; z-index: 9999 !important; background-color: #6a1b29 !important; padding: 10px 5px !important; border-radius: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important; margin-bottom: 20px !important;}
     div[data-baseweb="input"], div[data-baseweb="base-input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; border: none !important; }
     div[data-baseweb="input"] input { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-size: 16px !important; padding: 12px 18px !important; }
     
+    /* TARJETAS DE RESULTADOS */
     .card-box { background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 25px; border-radius: 12px; border-left: 8px solid #d4af37; margin-bottom: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); }
     .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; border-radius: 6px; padding: 4px 6px;}
     .col-name { font-weight: 700; color: #6a1b29 !important; }
@@ -88,7 +93,7 @@ def obtener_img_base64(ruta_imagen):
   with open(ruta_imagen, "rb") as f:
     return base64.b64encode(f.read()).decode()
 
-# ----------------- BARRA SUPERIOR -----------------
+# ----------------- BARRA SUPERIOR (Salir) -----------------
 if st.session_state.autenticado:
     col_espacio, col_salir = st.columns([0.6, 0.4])
     with col_salir:
@@ -98,6 +103,7 @@ if st.session_state.autenticado:
             st.query_params.clear()
             st.rerun()
 
+# Logo y Título siempre visibles (arriba del login o de la búsqueda)
 if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
   mime = "image/png" if logo_encontrado.endswith(".png") else "image/webp"
@@ -109,14 +115,16 @@ if logo_encontrado:
 st.markdown('<h1 class="title-text">Laboratorio Archipiélago</h1>', unsafe_allow_html=True)
 
 # ==============================================================================
-# 🔐 PANTALLA DE INICIO DE SESIÓN
+# 🔐 PANTALLA DE INICIO DE SESIÓN (MODIFICADA)
 # ==============================================================================
 if not st.session_state.autenticado:
-  st.markdown("<h3 style='text-align: center; margin-bottom: 15px;'>Acceso Restringido</h3>", unsafe_allow_html=True)
+  # ❌ Se eliminó el texto "Acceso Restringido" aquí ❌
+  
   col_vacia1, col_login, col_vacia2 = st.columns([0.05, 2.9, 0.05])
   with col_login:
     with st.form("form_login", clear_on_submit=False):
-      usuario_input = st.text_input("Usuario", placeholder="Ej: recepcion o tecnologo").strip()
+      # ❌ Se eliminó el placeholder de usuario ❌
+      usuario_input = st.text_input("Usuario", placeholder="").strip()
       clave_input = st.text_input("Contraseña", type="password").strip()
       if st.form_submit_button("Iniciar Sesión", use_container_width=True):
         if usuario_input in USUARIOS and USUARIOS[usuario_input] == clave_input:
@@ -125,7 +133,7 @@ if not st.session_state.autenticado:
           st.rerun()
         else:
           st.error("❌ Credenciales incorrectas.")
-  st.stop()
+  st.stop() # Detener ejecución si no está logueado
 
 # ==============================================================================
 # 📂 CARGA DE DATOS MULTI-HOJA
@@ -197,14 +205,15 @@ def obtener_precio(fila, tipo_pago):
 # 🔍 INTERFAZ PRINCIPAL: BUSCADOR Y COTIZADOR
 # ==============================================================================
 
-consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="Ej: Calprotectina codigo | O: suma venosa y TSH")
+# ❌ Se eliminó el placeholder de búsqueda ❌
+consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="")
 
 if consulta.strip() and dict_hojas_excel is not None:
     
     query_clean = consulta.strip()
 
     # ---------------------------------------------------------
-    # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (INTACTO - SOLO PRESTACIONES)
+    # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (INTACTO)
     # ---------------------------------------------------------
     if query_clean.lower().startswith("suma "):
         df_prestaciones = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=False)
@@ -258,7 +267,7 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (LEER TODAS LAS HOJAS)
+    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (INTACTO - ANTI BARRAS VACÍAS)
     # ---------------------------------------------------------
     else:
         palabras = [p for p in normalizar(query_clean).split() if p]
@@ -289,7 +298,7 @@ if consulta.strip() and dict_hojas_excel is not None:
 
             for _, fila in resultados_mostrar.iterrows():
                 
-                # 1. 🎯 IDENTIFICAR COLUMNAS DE NOMBRES/CATEGORÍAS
+                # Identificar nombres/categorías para evitar duplicados visuales
                 posibles_nombres = []
                 for c in fila.index:
                     cn = normalizar(str(c))
@@ -297,7 +306,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                     if "nombre" in cn or "prestac" in cn or cn == "examen":
                         posibles_nombres.append(c)
                 
-                # 2. 🎯 ELEGIR EL MEJOR NOMBRE Y DESCARTAR DUPLICADOS
+                # Elegir el mejor nombre
                 col_nombre_final = None
                 for c in posibles_nombres:
                     if "nombre" in normalizar(str(c)):
@@ -306,14 +315,13 @@ if consulta.strip() and dict_hojas_excel is not None:
                 if not col_nombre_final and posibles_nombres:
                     col_nombre_final = posibles_nombres[0]
                 
-                # La única columna ESENCIAL ahora es el Nombre
                 cols_esenciales = [col_nombre_final] if col_nombre_final else []
 
                 has_fonasa = "fonasa" in palabras
                 has_particular = "particular" in palabras
                 has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
                 
-                # 3. 🎯 FILTRO LÁSER DE ESPECIFICACIONES
+                # FILTRO LÁSER
                 cols_especificas = []
                 palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
                 
@@ -343,15 +351,13 @@ if consulta.strip() and dict_hojas_excel is not None:
                         if any(term in cn for term in palabras_filtro):
                             cols_especificas.append(c)
 
-                # 4. 🎯 CONSTRUCCIÓN DE LA TARJETA
+                # Construcción de la lista final de columnas a mostrar
                 if cols_especificas or has_fonasa or has_particular or has_precio:
-                    # MODO LÁSER: Mostrar Solo Nombre + Lo que pidió explícitamente
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
-                    # MODO ENCICLOPEDIA: Mostrar todo EXCEPTO los nombres duplicados
                     cols_a_mostrar = list(fila.index)
 
-                # 🚫 ELIMINAR COLUMNAS DE NOMBRES DUPLICADOS Y SINÓNIMOS
+                # ELIMINAR COLUMNAS DE NOMBRES DUPLICADOS Y SINÓNIMOS
                 cols_a_mostrar = [
                     c for c in cols_a_mostrar 
                     if (c not in posibles_nombres or c == col_nombre_final) 
@@ -359,7 +365,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                     and "sinónimo" not in normalizar(str(c))
                 ]
 
-                # 💳 RENDERIZADO VISUAL
+                # RENDERIZADO VISUAL CON SEGURO ANTI-BARRAS VACÍAS
                 contenido_tarjeta = ""
                 for col in cols_a_mostrar:
                     val = fila[col]
@@ -377,6 +383,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                         
                         contenido_tarjeta += f'<div class="row-item" style="{estilo}"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
                 
-                # 🚫 SEGURO ANTI-BARRAS VACÍAS: SOLO SE DIBUJA LA TARJETA SI TIENE INFORMACIÓN ÚTIL
+                # SOLO SE DIBUJA LA TARJETA SI TIENE INFORMACIÓN ÚTIL
                 if contenido_tarjeta.strip() != "":
                     st.markdown(f'<div class="card-box">{contenido_tarjeta}</div>', unsafe_allow_html=True)
