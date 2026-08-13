@@ -92,7 +92,7 @@ def obtener_img_base64(ruta_imagen):
   with open(ruta_imagen, "rb") as f:
     return base64.b64encode(f.read()).decode()
 
-# ----------------- BARRA SUPERIOR -----------------
+# ----------------- BARRA SUPERIOR (Salir) -----------------
 if st.session_state.autenticado:
     col_espacio, col_salir = st.columns([0.6, 0.4])
     with col_salir:
@@ -102,6 +102,7 @@ if st.session_state.autenticado:
             st.query_params.clear()
             st.rerun()
 
+# Logo y Título
 if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
   mime = "image/png" if logo_encontrado.endswith(".png") else "image/webp"
@@ -216,8 +217,6 @@ consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder=
 if consulta.strip() and dict_hojas_excel is not None:
     
     query_clean = consulta.strip()
-    
-    # 🎯 SWITCH INTELIGENTE: Detectar "BK" para aislar la hoja
     es_modo_bk = bool(re.search(r'(?i)\s+bk$', query_clean) or query_clean.lower() == "bk")
     
     if es_modo_bk:
@@ -225,7 +224,6 @@ if consulta.strip() and dict_hojas_excel is not None:
     else:
         query_busqueda = query_clean
 
-    # Aisla estrictamente el Dataframe que corresponde
     df_actual = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=es_modo_bk)
 
     # ---------------------------------------------------------
@@ -275,7 +273,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                 precio = obtener_precio(mejor_fila, tipo_pago)
                 total += precio
                 
-                # PRIORIDAD AL NOMBRE "ARCHIPIÉLAGO"
                 nombre_real = ""
                 for c in mejor_fila.index:
                     if "archipielago" in normalizar(str(c)):
@@ -293,7 +290,7 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (SOLO LA HOJA SELECCIONADA)
+    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER 
     # ---------------------------------------------------------
     else:
         palabras = [p for p in normalizar(query_busqueda).split() if p]
@@ -332,7 +329,7 @@ if consulta.strip() and dict_hojas_excel is not None:
 
             for _, fila in resultados_mostrar.iterrows():
                 
-                # 1. 🎯 IDENTIFICAR COLUMNAS DE NOMBRES/CATEGORÍAS
+                # 1. Identificar columnas de nombres
                 posibles_nombres = []
                 for c in fila.index:
                     cn = normalizar(str(c))
@@ -340,14 +337,13 @@ if consulta.strip() and dict_hojas_excel is not None:
                     if any(k in cn for k in ["prestac", "examen", "nombre", "archipielago"]):
                         posibles_nombres.append(c)
                 
-                # 2. 🎯 PRIORIDAD ABSOLUTA: "PRESTACIONES ARCHIPIÉLAGO"
+                # 2. Prioridad: "PRESTACIONES ARCHIPIÉLAGO"
                 col_nombre_final = None
                 for c in posibles_nombres:
                     if "archipielago" in normalizar(str(c)):
                         col_nombre_final = c
                         break
                 
-                # Fallback a "Nombre" o "Prestación"
                 if not col_nombre_final:
                     for c in posibles_nombres:
                         if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)):
@@ -362,7 +358,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                 has_particular = "particular" in palabras
                 has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
                 
-                # 3. 🎯 FILTRO LÁSER
+                # 3. Filtro Láser
                 cols_especificas = []
                 palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
                 
@@ -397,7 +393,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                 else:
                     cols_a_mostrar = list(fila.index)
 
-                # ELIMINAR DUPLICADOS Y SINÓNIMOS
+                # Eliminar duplicados y sinónimos
                 cols_a_mostrar = [
                     c for c in cols_a_mostrar 
                     if (c not in posibles_nombres or c == col_nombre_final) 
@@ -405,7 +401,12 @@ if consulta.strip() and dict_hojas_excel is not None:
                     and "sinónimo" not in normalizar(str(c))
                 ]
 
-                # RENDERIZADO VISUAL
+                # 🚀 ESTA ES LA REGLA NUEVA: Anclar el Nombre al principio de la lista
+                if col_nombre_final and col_nombre_final in cols_a_mostrar:
+                    cols_a_mostrar.remove(col_nombre_final)
+                    cols_a_mostrar.insert(0, col_nombre_final)
+
+                # Renderizado Visual
                 contenido_tarjeta = ""
                 for col in cols_a_mostrar:
                     val = fila[col]
