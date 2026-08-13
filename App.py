@@ -156,10 +156,21 @@ def normalizar(texto):
 def obtener_df_segun_modo(dict_hojas, es_modo_bk=False):
     if not dict_hojas: return None
     hoja_prestaciones = None
+    hoja_bk = None
+    
     for nombre, df in dict_hojas.items():
-        if "prestac" in normalizar(nombre):
+        n_norm = normalizar(nombre)
+        if "barnafi" in n_norm or "bk" in n_norm:
+            hoja_bk = df
+        elif "prestac" in n_norm:
             hoja_prestaciones = df
-    return hoja_prestaciones if hoja_prestaciones is not None else list(dict_hojas.values())[0]
+            
+    if es_modo_bk:
+        if hoja_bk is not None: return hoja_bk
+        return list(dict_hojas.values())[-1] 
+    else:
+        if hoja_prestaciones is not None: return hoja_prestaciones
+        return list(dict_hojas.values())[0] 
 
 # ==============================================================================
 # 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO (INTACTO 100%) 🔒
@@ -205,11 +216,22 @@ consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder=
 if consulta.strip() and dict_hojas_excel is not None:
     
     query_clean = consulta.strip()
+    
+    # 🎯 SWITCH INTELIGENTE: Detectar "BK" para aislar la hoja
+    es_modo_bk = bool(re.search(r'(?i)\s+bk$', query_clean) or query_clean.lower() == "bk")
+    
+    if es_modo_bk:
+        query_busqueda = re.sub(r'(?i)\s+bk$', '', query_clean).strip()
+    else:
+        query_busqueda = query_clean
+
+    # Aisla estrictamente el Dataframe que corresponde
+    df_actual = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=es_modo_bk)
 
     # ---------------------------------------------------------
     # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (INTACTO)
     # ---------------------------------------------------------
-    if query_clean.lower().startswith("suma "):
+    if query_busqueda.lower().startswith("suma "):
         df_prestaciones = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=False)
         
         st.markdown('<div class="cotizador-box">', unsafe_allow_html=True)
@@ -217,7 +239,7 @@ if consulta.strip() and dict_hojas_excel is not None:
         
         tipo_pago = st.radio("Selecciona la Previsión:", ["Particular", "Fonasa"], horizontal=True)
         
-        texto_examenes = query_clean[5:] 
+        texto_examenes = query_busqueda[5:] 
         nombres_examenes = [x.strip() for x in re.split(r',|\by\b', texto_examenes) if x.strip()]
         
         total = 0
@@ -234,11 +256,9 @@ if consulta.strip() and dict_hojas_excel is not None:
                 mejor_fila = None
                 mejor_puntaje = 999999
                 
-                # ALGORITMO RELEVANCIA ACTUALIZADO
                 for _, fila in df_resultados.iterrows():
                     puntaje = 10000
                     for p in palabras:
-                        # Si la palabra es EXACTAMENTE igual a una celda (ej: "tsh" en la celda de Sinónimos) GANA.
                         if any(p == normalizar(str(v)).strip() for v in fila.values):
                             puntaje -= 5000
                         else:
@@ -255,7 +275,15 @@ if consulta.strip() and dict_hojas_excel is not None:
                 precio = obtener_precio(mejor_fila, tipo_pago)
                 total += precio
                 
-                nombre_real = str(mejor_fila.values[0]) if len(str(mejor_fila.values[0])) > 5 else str(mejor_fila.values[1])
+                # PRIORIDAD AL NOMBRE "ARCHIPIÉLAGO"
+                nombre_real = ""
+                for c in mejor_fila.index:
+                    if "archipielago" in normalizar(str(c)):
+                        nombre_real = str(mejor_fila[c])
+                        break
+                if not nombre_real:
+                    nombre_real = str(mejor_fila.values[0]) if len(str(mejor_fila.values[0])) > 5 else str(mejor_fila.values[1])
+
                 st.success(f"✅ **{nombre.upper()}** ({nombre_real}) ➔ **{formatear_pesos(precio)}**")
             else:
                 st.error(f"❌ **{nombre.upper()}** ➔ No encontrado.")
@@ -265,26 +293,27 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (ANTI BARRAS VACÍAS + SINÓNIMOS)
+    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (SOLO LA HOJA SELECCIONADA)
     # ---------------------------------------------------------
     else:
-        palabras = [p for p in normalizar(query_clean).split() if p]
-        df_todas_las_hojas = pd.concat(list(dict_hojas_excel.values()), ignore_index=True).fillna("")
+        palabras = [p for p in normalizar(query_busqueda).split() if p]
 
         def coincide_examen(fila):
             texto_fila = normalizar(" ".join([str(c) for c in fila.index] + [str(v) for v in fila.values]))
             return all(term in texto_fila for term in palabras)
 
-        df_resultados = df_todas_las_hojas[df_todas_las_hojas.apply(coincide_examen, axis=1)]
+        if df_actual is not None:
+            df_resultados = df_actual[df_actual.apply(coincide_examen, axis=1)]
+        else:
+            df_resultados = pd.DataFrame()
 
         if df_resultados.empty:
-            st.warning(f"⚠️ No se encontró información para **'{query_clean}'** en ninguna hoja.")
+            origen_str = "en BKLAB" if es_modo_bk else "en Prestaciones"
+            st.warning(f"⚠️ No se encontró información para **'{query_busqueda}'** {origen_str}.")
         else:
-            # ALGORITMO RELEVANCIA ACTUALIZADO
             def calcular_puntaje(fila):
                 puntaje = 10000
                 for p in palabras:
-                    # Si "TSH" está exacto en una celda (como en Sinónimos), le da 5000 puntos de ventaja.
                     if any(p == normalizar(str(v)).strip() for v in fila.values):
                         puntaje -= 5000
                     else:
@@ -298,20 +327,32 @@ if consulta.strip() and dict_hojas_excel is not None:
             df_resultados = df_resultados.sort_values('__puntaje__').drop(columns=['__puntaje__'])
             resultados_mostrar = df_resultados.head(50)
 
+            if es_modo_bk:
+                st.info("🧪 **Ficha Técnica BKLAB / Barnafi**")
+
             for _, fila in resultados_mostrar.iterrows():
                 
+                # 1. 🎯 IDENTIFICAR COLUMNAS DE NOMBRES/CATEGORÍAS
                 posibles_nombres = []
                 for c in fila.index:
                     cn = normalizar(str(c))
                     if "sinonimo" in cn: continue
-                    if "nombre" in cn or "prestac" in cn or cn == "examen":
+                    if any(k in cn for k in ["prestac", "examen", "nombre", "archipielago"]):
                         posibles_nombres.append(c)
                 
+                # 2. 🎯 PRIORIDAD ABSOLUTA: "PRESTACIONES ARCHIPIÉLAGO"
                 col_nombre_final = None
                 for c in posibles_nombres:
-                    if "nombre" in normalizar(str(c)):
+                    if "archipielago" in normalizar(str(c)):
                         col_nombre_final = c
                         break
+                
+                # Fallback a "Nombre" o "Prestación"
+                if not col_nombre_final:
+                    for c in posibles_nombres:
+                        if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)):
+                            col_nombre_final = c
+                            break
                 if not col_nombre_final and posibles_nombres:
                     col_nombre_final = posibles_nombres[0]
                 
@@ -321,6 +362,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                 has_particular = "particular" in palabras
                 has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
                 
+                # 3. 🎯 FILTRO LÁSER
                 cols_especificas = []
                 palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
                 
@@ -355,6 +397,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                 else:
                     cols_a_mostrar = list(fila.index)
 
+                # ELIMINAR DUPLICADOS Y SINÓNIMOS
                 cols_a_mostrar = [
                     c for c in cols_a_mostrar 
                     if (c not in posibles_nombres or c == col_nombre_final) 
@@ -362,6 +405,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                     and "sinónimo" not in normalizar(str(c))
                 ]
 
+                # RENDERIZADO VISUAL
                 contenido_tarjeta = ""
                 for col in cols_a_mostrar:
                     val = fila[col]
