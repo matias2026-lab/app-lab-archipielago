@@ -47,6 +47,7 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
 st.markdown(
     """
     <style>
+    /* Bloqueo PWA Nativo */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     .stApp { background-color: #6a1b29; color: #ffffff; }
@@ -148,7 +149,6 @@ def normalizar(texto):
   return "".join([c for c in unicodedata.normalize("NFKD", str(texto).lower()) if not unicodedata.combining(c)])
 
 def obtener_df_segun_modo(dict_hojas, es_modo_bk=False):
-    """(USADO SOLO PARA LA SUMA) Retorna únicamente la hoja de prestaciones."""
     if not dict_hojas: return None
     hoja_prestaciones = None
     for nombre, df in dict_hojas.items():
@@ -157,7 +157,7 @@ def obtener_df_segun_modo(dict_hojas, es_modo_bk=False):
     return hoja_prestaciones if hoja_prestaciones is not None else list(dict_hojas.values())[0]
 
 # ==============================================================================
-# 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO (100% INTACTO Y BLOQUEADO) 🔒
+# 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO (INTACTO 100%) 🔒
 # ==============================================================================
 def es_columna_precio_fonasa(col_name):
     c = normalizar(str(col_name))
@@ -198,10 +198,11 @@ def obtener_precio(fila, tipo_pago):
 consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="")
 
 if consulta.strip() and dict_hojas_excel is not None:
+    
     query_clean = consulta.strip()
 
     # ---------------------------------------------------------
-    # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (INTACTO - SOLO PRESTACIONES)
+    # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (INTACTO)
     # ---------------------------------------------------------
     if query_clean.lower().startswith("suma "):
         df_prestaciones = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=False)
@@ -218,11 +219,11 @@ if consulta.strip() and dict_hojas_excel is not None:
         
         for nombre in nombres_examenes:
             palabras = [p for p in normalizar(nombre).split() if p]
-            def coincide_examen_suma(fila):
+            def coincide_examen(fila):
                 texto_fila = normalizar(" ".join([str(c) for c in fila.index] + [str(v) for v in fila.values]))
                 return all(term in texto_fila for term in palabras)
             
-            df_resultados = df_prestaciones[df_prestaciones.apply(coincide_examen_suma, axis=1)]
+            df_resultados = df_prestaciones[df_prestaciones.apply(coincide_examen, axis=1)]
             
             if not df_resultados.empty:
                 mejor_fila = None
@@ -264,12 +265,11 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA OMNIDIRECCIONAL (LEER TODAS LAS HOJAS)
+    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (DISEÑO QUIRÚRGICO)
     # ---------------------------------------------------------
     else:
         palabras = [p for p in normalizar(query_clean).split() if p]
         
-        # Unimos TODAS las hojas del Excel en una súper tabla
         df_todas_las_hojas = pd.concat(list(dict_hojas_excel.values()), ignore_index=True).fillna("")
 
         def coincide_examen_general(fila):
@@ -277,7 +277,6 @@ if consulta.strip() and dict_hojas_excel is not None:
             tiene_plata = False
             tiene_codigo = False
             
-            # Solo evaluamos celdas que NO estén vacías para evitar cruces falsos
             for c, v in fila.items():
                 if str(v).strip() != "":
                     elementos_validos.append(str(c))
@@ -287,7 +286,6 @@ if consulta.strip() and dict_hojas_excel is not None:
             
             texto_fila = normalizar(" ".join(elementos_validos))
             
-            # Traductor Interno Inteligente
             if tiene_plata: texto_fila += " precio precios valor valores arancel copago fonasa particular"
             if tiene_codigo: texto_fila += " codigo codigos"
                 
@@ -312,7 +310,7 @@ if consulta.strip() and dict_hojas_excel is not None:
 
             for _, fila in resultados_mostrar.iterrows():
                 
-                # 1. 🎯 Identificar y anclar el Nombre
+                # 1. 🎯 Identificar el Nombre del Examen
                 posibles_nombres = []
                 for c in fila.index:
                     cn = normalizar(str(c))
@@ -339,7 +337,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                 has_particular = "particular" in palabras
                 has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
                 
-                # 2. 🎯 Filtro Láser de Columnas
+                # 2. 🎯 Filtro Láser de Especificaciones
                 cols_especificas = []
                 palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
                 
@@ -347,39 +345,51 @@ if consulta.strip() and dict_hojas_excel is not None:
                     for c in fila.index:
                         if es_columna_precio_fonasa(c): cols_especificas.append(c)
                         else:
-                            if any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["fonasa", "copago", "2026"]): cols_especificas.append(c)
+                            cn = normalizar(str(c))
+                            if any(p in cn for p in palabras_filtro if p not in ["fonasa", "copago", "2026"]): cols_especificas.append(c)
                             
                 elif has_particular and not has_fonasa:
                     for c in fila.index:
                         if es_columna_precio_particular(c): cols_especificas.append(c)
                         else:
-                            if any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["particular", "valor", "2026"]): cols_especificas.append(c)
+                            cn = normalizar(str(c))
+                            if any(p in cn for p in palabras_filtro if p not in ["particular", "valor", "2026"]): cols_especificas.append(c)
                             
                 elif has_precio:
                     for c in fila.index:
                         if es_columna_precio_fonasa(c) or es_columna_precio_particular(c): cols_especificas.append(c)
                         else:
-                            if any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["fonasa", "particular", "precio", "valor", "arancel", "copago"]): cols_especificas.append(c)
+                            cn = normalizar(str(c))
+                            if any(p in cn for p in palabras_filtro if p not in ["fonasa", "particular", "precio", "valor", "arancel", "copago"]): cols_especificas.append(c)
                 else:
                     for c in fila.index:
-                        if any(term in normalizar(str(c)) for term in palabras_filtro):
+                        cn = normalizar(str(c))
+                        if any(term in cn for term in palabras_filtro):
                             cols_especificas.append(c)
 
-                # 3. 🎯 Lógica de Enciclopedia vs Láser
+                # 3. 🎯 Enciclopedia vs Láser
                 if cols_especificas or has_fonasa or has_particular or has_precio:
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
                     cols_a_mostrar = list(fila.index)
 
-                # Limpieza de duplicados y sinónimos
-                cols_a_mostrar = [
-                    c for c in cols_a_mostrar 
-                    if (c not in posibles_nombres or c == col_nombre_final) 
-                    and "sinonimo" not in normalizar(str(c)) 
-                    and "sinónimo" not in normalizar(str(c))
-                ]
+                # 4. 🚫 LA LISTA NEGRA: Eliminar basura visual, redundancias y sinónimos
+                columnas_basura = ["sinonimo", "sinónimo", "palabra", "item"]
+                
+                cols_filtradas = []
+                for c in cols_a_mostrar:
+                    cn = normalizar(str(c))
+                    # Es basura? (Ej: "ITEM", "Palabras claves", "Sinonimos")
+                    if any(b in cn for b in columnas_basura):
+                        continue
+                    # Es un nombre duplicado? (Ej: "EXAMEN" cuando ya tenemos "PRESTACIONES ARCHIPIELAGO")
+                    if c in posibles_nombres and c != col_nombre_final:
+                        continue
+                    cols_filtradas.append(c)
+                    
+                cols_a_mostrar = cols_filtradas
 
-                # Anclar el nombre al tope
+                # 5. 👑 CORONACIÓN: Forzar que el Nombre esté SIEMPRE de primero (Index 0)
                 if col_nombre_final and col_nombre_final in cols_a_mostrar:
                     cols_a_mostrar.remove(col_nombre_final)
                     cols_a_mostrar.insert(0, col_nombre_final)
