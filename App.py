@@ -25,10 +25,10 @@ for posible_nombre in ["logo lab.png", "logo.png", "logo lab.webp", "logo.webp"]
 st.set_page_config(page_title="Lab Archipiélago", page_icon=icono_app, layout="centered")
 
 # ==============================================================================
-# 🔐 CONFIGURACIÓN DE USUARIOS (CONTRASEÑA ACTUALIZADA)
+# 🔐 CONFIGURACIÓN DE USUARIOS
 # ==============================================================================
 USUARIOS = {
-    "659": "12345", # ✅ Usuario 659 con contraseña 12345
+    "659": "12345",
 }
 
 if "autenticado" not in st.session_state:
@@ -92,7 +92,7 @@ def obtener_img_base64(ruta_imagen):
   with open(ruta_imagen, "rb") as f:
     return base64.b64encode(f.read()).decode()
 
-# ----------------- BARRA SUPERIOR (Salir) -----------------
+# ----------------- BARRA SUPERIOR -----------------
 if st.session_state.autenticado:
     col_espacio, col_salir = st.columns([0.6, 0.4])
     with col_salir:
@@ -102,7 +102,6 @@ if st.session_state.autenticado:
             st.query_params.clear()
             st.rerun()
 
-# Logo y Título siempre visibles (arriba del login o de la búsqueda)
 if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
   mime = "image/png" if logo_encontrado.endswith(".png") else "image/webp"
@@ -129,7 +128,7 @@ if not st.session_state.autenticado:
           st.rerun()
         else:
           st.error("❌ Credenciales incorrectas.")
-  st.stop() # Detener ejecución si no está logueado
+  st.stop()
 
 # ==============================================================================
 # 📂 CARGA DE DATOS MULTI-HOJA
@@ -235,15 +234,19 @@ if consulta.strip() and dict_hojas_excel is not None:
                 mejor_fila = None
                 mejor_puntaje = 999999
                 
+                # ALGORITMO RELEVANCIA ACTUALIZADO
                 for _, fila in df_resultados.iterrows():
+                    puntaje = 10000
+                    for p in palabras:
+                        # Si la palabra es EXACTAMENTE igual a una celda (ej: "tsh" en la celda de Sinónimos) GANA.
+                        if any(p == normalizar(str(v)).strip() for v in fila.values):
+                            puntaje -= 5000
+                        else:
+                            puntaje -= 500
+                            
                     val0 = normalizar(str(fila.values[0]))
                     val1 = normalizar(str(fila.values[1])) if len(fila.values) > 1 else ""
-                    val_texto = val0 + " " + val1
-                    
-                    puntaje = len(val_texto)
-                    for p in palabras:
-                        if p == val0 or p == val1: puntaje -= 1000
-                        elif f" {p} " in f" {val_texto} ": puntaje -= 500
+                    puntaje += len(val0 + " " + val1)
                         
                     if puntaje < mejor_puntaje:
                         mejor_puntaje = puntaje
@@ -262,7 +265,7 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (INTACTO - ANTI BARRAS VACÍAS)
+    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (ANTI BARRAS VACÍAS + SINÓNIMOS)
     # ---------------------------------------------------------
     else:
         palabras = [p for p in normalizar(query_clean).split() if p]
@@ -277,15 +280,19 @@ if consulta.strip() and dict_hojas_excel is not None:
         if df_resultados.empty:
             st.warning(f"⚠️ No se encontró información para **'{query_clean}'** en ninguna hoja.")
         else:
+            # ALGORITMO RELEVANCIA ACTUALIZADO
             def calcular_puntaje(fila):
+                puntaje = 10000
+                for p in palabras:
+                    # Si "TSH" está exacto en una celda (como en Sinónimos), le da 5000 puntos de ventaja.
+                    if any(p == normalizar(str(v)).strip() for v in fila.values):
+                        puntaje -= 5000
+                    else:
+                        puntaje -= 500
+                        
                 val0 = normalizar(str(fila.values[0]))
                 val1 = normalizar(str(fila.values[1])) if len(fila.values) > 1 else ""
-                val_texto = val0 + " " + val1
-                puntaje = len(val_texto)
-                for p in palabras:
-                    if p == val0 or p == val1: puntaje -= 1000
-                    elif f" {p} " in f" {val_texto} ": puntaje -= 500
-                return puntaje
+                return puntaje + len(val0 + " " + val1)
 
             df_resultados['__puntaje__'] = df_resultados.apply(calcular_puntaje, axis=1)
             df_resultados = df_resultados.sort_values('__puntaje__').drop(columns=['__puntaje__'])
@@ -293,7 +300,6 @@ if consulta.strip() and dict_hojas_excel is not None:
 
             for _, fila in resultados_mostrar.iterrows():
                 
-                # Identificar nombres/categorías para evitar duplicados visuales
                 posibles_nombres = []
                 for c in fila.index:
                     cn = normalizar(str(c))
@@ -301,7 +307,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                     if "nombre" in cn or "prestac" in cn or cn == "examen":
                         posibles_nombres.append(c)
                 
-                # Elegir el mejor nombre
                 col_nombre_final = None
                 for c in posibles_nombres:
                     if "nombre" in normalizar(str(c)):
@@ -316,7 +321,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                 has_particular = "particular" in palabras
                 has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
                 
-                # FILTRO LÁSER
                 cols_especificas = []
                 palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
                 
@@ -346,13 +350,11 @@ if consulta.strip() and dict_hojas_excel is not None:
                         if any(term in cn for term in palabras_filtro):
                             cols_especificas.append(c)
 
-                # Construcción de la lista final de columnas a mostrar
                 if cols_especificas or has_fonasa or has_particular or has_precio:
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
                     cols_a_mostrar = list(fila.index)
 
-                # ELIMINAR COLUMNAS DE NOMBRES DUPLICADOS Y SINÓNIMOS
                 cols_a_mostrar = [
                     c for c in cols_a_mostrar 
                     if (c not in posibles_nombres or c == col_nombre_final) 
@@ -360,7 +362,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                     and "sinónimo" not in normalizar(str(c))
                 ]
 
-                # RENDERIZADO VISUAL CON SEGURO ANTI-BARRAS VACÍAS
                 contenido_tarjeta = ""
                 for col in cols_a_mostrar:
                     val = fila[col]
@@ -378,6 +379,5 @@ if consulta.strip() and dict_hojas_excel is not None:
                         
                         contenido_tarjeta += f'<div class="row-item" style="{estilo}"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
                 
-                # SOLO SE DIBUJA LA TARJETA SI TIENE INFORMACIÓN ÚTIL
                 if contenido_tarjeta.strip() != "":
                     st.markdown(f'<div class="card-box">{contenido_tarjeta}</div>', unsafe_allow_html=True)
