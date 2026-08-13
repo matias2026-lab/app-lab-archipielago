@@ -47,20 +47,16 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
 st.markdown(
     """
     <style>
-    /* Bloqueo PWA Nativo */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     .stApp { background-color: #6a1b29; color: #ffffff; }
     
-    /* ELIMINAR BRANDING STREAMLIT */
     footer, #MainMenu, header, .stActionButton, .stDeployButton { display: none !important; visibility: hidden !important; }
     [data-testid="InputInstructions"], [data-testid="stInputInstructions"], div[class*="InputInstructions"], .stTextInput small, .st-emotion-cache-1c7y2kd { display: none !important; opacity: 0 !important; visibility: hidden !important; }
     
-    /* RECUADRO ÚNICO PARA EL LOGIN */
     div[data-testid="stForm"] { background-color: transparent !important; border: 2px solid #d4af37 !important; border-radius: 16px !important; padding: 25px 20px !important; }
     .stTextInput label p, .stTextInput label, label { color: #ffffff !important; font-weight: 700 !important; font-size: 16px !important; }
     
-    /* BOTONES ALTO CONTRASTE */
     div[data-testid="stButton"] > button, div[data-testid="stFormSubmitButton"] > button {
         background-color: #48121b !important; color: #ffffff !important; border: 1.5px solid #d4af37 !important; border-radius: 10px !important;
         font-weight: 700 !important; font-size: 15px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
@@ -70,12 +66,10 @@ st.markdown(
 
     [data-testid="stHeader"] { background-color: transparent !important; visibility: visible !important; height: 50px !important; }
     
-    /* BUSCADOR FIJO SUPERIOR */
     div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stTextInput"]) { position: -webkit-sticky !important; position: sticky !important; top: 10px !important; z-index: 9999 !important; background-color: #6a1b29 !important; padding: 10px 5px !important; border-radius: 15px !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important; margin-bottom: 20px !important;}
     div[data-baseweb="input"], div[data-baseweb="base-input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; border: none !important; }
     div[data-baseweb="input"] input { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-size: 16px !important; padding: 12px 18px !important; }
     
-    /* TARJETAS DE RESULTADOS */
     .card-box { background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 25px; border-radius: 12px; border-left: 8px solid #d4af37; margin-bottom: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); }
     .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; border-radius: 6px; padding: 4px 6px;}
     .col-name { font-weight: 700; color: #6a1b29 !important; }
@@ -92,7 +86,7 @@ def obtener_img_base64(ruta_imagen):
   with open(ruta_imagen, "rb") as f:
     return base64.b64encode(f.read()).decode()
 
-# ----------------- BARRA SUPERIOR (Salir) -----------------
+# ----------------- BARRA SUPERIOR -----------------
 if st.session_state.autenticado:
     col_espacio, col_salir = st.columns([0.6, 0.4])
     with col_salir:
@@ -102,7 +96,6 @@ if st.session_state.autenticado:
             st.query_params.clear()
             st.rerun()
 
-# Logo y Título
 if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
   mime = "image/png" if logo_encontrado.endswith(".png") else "image/webp"
@@ -155,26 +148,16 @@ def normalizar(texto):
   return "".join([c for c in unicodedata.normalize("NFKD", str(texto).lower()) if not unicodedata.combining(c)])
 
 def obtener_df_segun_modo(dict_hojas, es_modo_bk=False):
+    """(USADO SOLO PARA LA SUMA) Retorna únicamente la hoja de prestaciones."""
     if not dict_hojas: return None
     hoja_prestaciones = None
-    hoja_bk = None
-    
     for nombre, df in dict_hojas.items():
-        n_norm = normalizar(nombre)
-        if "barnafi" in n_norm or "bk" in n_norm:
-            hoja_bk = df
-        elif "prestac" in n_norm:
+        if "prestac" in normalizar(nombre):
             hoja_prestaciones = df
-            
-    if es_modo_bk:
-        if hoja_bk is not None: return hoja_bk
-        return list(dict_hojas.values())[-1] 
-    else:
-        if hoja_prestaciones is not None: return hoja_prestaciones
-        return list(dict_hojas.values())[0] 
+    return hoja_prestaciones if hoja_prestaciones is not None else list(dict_hojas.values())[0]
 
 # ==============================================================================
-# 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO (INTACTO 100%) 🔒
+# 🛠️ MATEMÁTICA Y EXTRACCIÓN DE DINERO (100% INTACTO Y BLOQUEADO) 🔒
 # ==============================================================================
 def es_columna_precio_fonasa(col_name):
     c = normalizar(str(col_name))
@@ -215,21 +198,12 @@ def obtener_precio(fila, tipo_pago):
 consulta = st.text_input("Búsqueda", label_visibility="collapsed", placeholder="")
 
 if consulta.strip() and dict_hojas_excel is not None:
-    
     query_clean = consulta.strip()
-    es_modo_bk = bool(re.search(r'(?i)\s+bk$', query_clean) or query_clean.lower() == "bk")
-    
-    if es_modo_bk:
-        query_busqueda = re.sub(r'(?i)\s+bk$', '', query_clean).strip()
-    else:
-        query_busqueda = query_clean
-
-    df_actual = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=es_modo_bk)
 
     # ---------------------------------------------------------
-    # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (INTACTO)
+    # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (INTACTO - SOLO PRESTACIONES)
     # ---------------------------------------------------------
-    if query_busqueda.lower().startswith("suma "):
+    if query_clean.lower().startswith("suma "):
         df_prestaciones = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=False)
         
         st.markdown('<div class="cotizador-box">', unsafe_allow_html=True)
@@ -237,18 +211,18 @@ if consulta.strip() and dict_hojas_excel is not None:
         
         tipo_pago = st.radio("Selecciona la Previsión:", ["Particular", "Fonasa"], horizontal=True)
         
-        texto_examenes = query_busqueda[5:] 
+        texto_examenes = query_clean[5:] 
         nombres_examenes = [x.strip() for x in re.split(r',|\by\b', texto_examenes) if x.strip()]
         
         total = 0
         
         for nombre in nombres_examenes:
             palabras = [p for p in normalizar(nombre).split() if p]
-            def coincide_examen(fila):
+            def coincide_examen_suma(fila):
                 texto_fila = normalizar(" ".join([str(c) for c in fila.index] + [str(v) for v in fila.values]))
                 return all(term in texto_fila for term in palabras)
             
-            df_resultados = df_prestaciones[df_prestaciones.apply(coincide_examen, axis=1)]
+            df_resultados = df_prestaciones[df_prestaciones.apply(coincide_examen_suma, axis=1)]
             
             if not df_resultados.empty:
                 mejor_fila = None
@@ -290,46 +264,55 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER 
+    # 🌟 MODO 2: BÚSQUEDA OMNIDIRECCIONAL (LEER TODAS LAS HOJAS)
     # ---------------------------------------------------------
     else:
-        palabras = [p for p in normalizar(query_busqueda).split() if p]
+        palabras = [p for p in normalizar(query_clean).split() if p]
+        
+        # Unimos TODAS las hojas del Excel en una súper tabla
+        df_todas_las_hojas = pd.concat(list(dict_hojas_excel.values()), ignore_index=True).fillna("")
 
-        def coincide_examen(fila):
-            texto_fila = normalizar(" ".join([str(c) for c in fila.index] + [str(v) for v in fila.values]))
+        def coincide_examen_general(fila):
+            elementos_validos = []
+            tiene_plata = False
+            tiene_codigo = False
+            
+            # Solo evaluamos celdas que NO estén vacías para evitar cruces falsos
+            for c, v in fila.items():
+                if str(v).strip() != "":
+                    elementos_validos.append(str(c))
+                    elementos_validos.append(str(v))
+                    if es_columna_precio_fonasa(c) or es_columna_precio_particular(c): tiene_plata = True
+                    if any(x in normalizar(str(c)) for x in ["codigo", "proactive", "bklab"]): tiene_codigo = True
+            
+            texto_fila = normalizar(" ".join(elementos_validos))
+            
+            # Traductor Interno Inteligente
+            if tiene_plata: texto_fila += " precio precios valor valores arancel copago fonasa particular"
+            if tiene_codigo: texto_fila += " codigo codigos"
+                
             return all(term in texto_fila for term in palabras)
 
-        if df_actual is not None:
-            df_resultados = df_actual[df_actual.apply(coincide_examen, axis=1)]
-        else:
-            df_resultados = pd.DataFrame()
+        df_resultados = df_todas_las_hojas[df_todas_las_hojas.apply(coincide_examen_general, axis=1)]
 
         if df_resultados.empty:
-            origen_str = "en BKLAB" if es_modo_bk else "en Prestaciones"
-            st.warning(f"⚠️ No se encontró información para **'{query_busqueda}'** {origen_str}.")
+            st.warning(f"⚠️ No se encontró información para **'{query_clean}'** en ninguna hoja.")
         else:
-            def calcular_puntaje(fila):
+            def calcular_puntaje_general(fila):
                 puntaje = 10000
+                valores_validos = [normalizar(str(v)).strip() for v in fila.values if str(v).strip() != ""]
                 for p in palabras:
-                    if any(p == normalizar(str(v)).strip() for v in fila.values):
-                        puntaje -= 5000
-                    else:
-                        puntaje -= 500
-                        
-                val0 = normalizar(str(fila.values[0]))
-                val1 = normalizar(str(fila.values[1])) if len(fila.values) > 1 else ""
-                return puntaje + len(val0 + " " + val1)
+                    if any(p == v for v in valores_validos): puntaje -= 5000
+                    else: puntaje -= 500
+                return puntaje + len(" ".join(valores_validos))
 
-            df_resultados['__puntaje__'] = df_resultados.apply(calcular_puntaje, axis=1)
+            df_resultados['__puntaje__'] = df_resultados.apply(calcular_puntaje_general, axis=1)
             df_resultados = df_resultados.sort_values('__puntaje__').drop(columns=['__puntaje__'])
             resultados_mostrar = df_resultados.head(50)
 
-            if es_modo_bk:
-                st.info("🧪 **Ficha Técnica BKLAB / Barnafi**")
-
             for _, fila in resultados_mostrar.iterrows():
                 
-                # 1. Identificar columnas de nombres
+                # 1. 🎯 Identificar y anclar el Nombre
                 posibles_nombres = []
                 for c in fila.index:
                     cn = normalizar(str(c))
@@ -337,13 +320,11 @@ if consulta.strip() and dict_hojas_excel is not None:
                     if any(k in cn for k in ["prestac", "examen", "nombre", "archipielago"]):
                         posibles_nombres.append(c)
                 
-                # 2. Prioridad: "PRESTACIONES ARCHIPIÉLAGO"
                 col_nombre_final = None
                 for c in posibles_nombres:
                     if "archipielago" in normalizar(str(c)):
                         col_nombre_final = c
                         break
-                
                 if not col_nombre_final:
                     for c in posibles_nombres:
                         if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)):
@@ -358,7 +339,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                 has_particular = "particular" in palabras
                 has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
                 
-                # 3. Filtro Láser
+                # 2. 🎯 Filtro Láser de Columnas
                 cols_especificas = []
                 palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
                 
@@ -366,34 +347,31 @@ if consulta.strip() and dict_hojas_excel is not None:
                     for c in fila.index:
                         if es_columna_precio_fonasa(c): cols_especificas.append(c)
                         else:
-                            cn = normalizar(str(c))
-                            if any(p in cn for p in palabras_filtro if p not in ["fonasa", "copago", "2026"]): cols_especificas.append(c)
+                            if any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["fonasa", "copago", "2026"]): cols_especificas.append(c)
                             
                 elif has_particular and not has_fonasa:
                     for c in fila.index:
                         if es_columna_precio_particular(c): cols_especificas.append(c)
                         else:
-                            cn = normalizar(str(c))
-                            if any(p in cn for p in palabras_filtro if p not in ["particular", "valor", "2026"]): cols_especificas.append(c)
+                            if any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["particular", "valor", "2026"]): cols_especificas.append(c)
                             
                 elif has_precio:
                     for c in fila.index:
                         if es_columna_precio_fonasa(c) or es_columna_precio_particular(c): cols_especificas.append(c)
                         else:
-                            cn = normalizar(str(c))
-                            if any(p in cn for p in palabras_filtro if p not in ["fonasa", "particular", "precio", "valor", "arancel", "copago"]): cols_especificas.append(c)
+                            if any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["fonasa", "particular", "precio", "valor", "arancel", "copago"]): cols_especificas.append(c)
                 else:
                     for c in fila.index:
-                        cn = normalizar(str(c))
-                        if any(term in cn for term in palabras_filtro):
+                        if any(term in normalizar(str(c)) for term in palabras_filtro):
                             cols_especificas.append(c)
 
+                # 3. 🎯 Lógica de Enciclopedia vs Láser
                 if cols_especificas or has_fonasa or has_particular or has_precio:
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
                     cols_a_mostrar = list(fila.index)
 
-                # Eliminar duplicados y sinónimos
+                # Limpieza de duplicados y sinónimos
                 cols_a_mostrar = [
                     c for c in cols_a_mostrar 
                     if (c not in posibles_nombres or c == col_nombre_final) 
@@ -401,12 +379,12 @@ if consulta.strip() and dict_hojas_excel is not None:
                     and "sinónimo" not in normalizar(str(c))
                 ]
 
-                # 🚀 ESTA ES LA REGLA NUEVA: Anclar el Nombre al principio de la lista
+                # Anclar el nombre al tope
                 if col_nombre_final and col_nombre_final in cols_a_mostrar:
                     cols_a_mostrar.remove(col_nombre_final)
                     cols_a_mostrar.insert(0, col_nombre_final)
 
-                # Renderizado Visual
+                # 💳 RENDERIZADO VISUAL
                 contenido_tarjeta = ""
                 for col in cols_a_mostrar:
                     val = fila[col]
@@ -424,5 +402,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                         
                         contenido_tarjeta += f'<div class="row-item" style="{estilo}"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
                 
+                # 🚫 SEGURO ANTI-BARRAS VACÍAS
                 if contenido_tarjeta.strip() != "":
                     st.markdown(f'<div class="card-box">{contenido_tarjeta}</div>', unsafe_allow_html=True)
