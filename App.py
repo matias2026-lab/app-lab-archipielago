@@ -47,6 +47,7 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
 st.markdown(
     """
     <style>
+    /* Bloqueo PWA Nativo */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     .stApp { background-color: #6a1b29; color: #ffffff; }
@@ -204,8 +205,19 @@ def es_col_nombre(c):
     cn = normalizar(str(c))
     return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or cn == "examen"
 
+# LISTA DE EXÁMENES QUE NO REQUIEREN PREPARACIÓN
+NO_REQUIERE_PREPARACION = [
+    "f.r", "factor reumatoide", "grupo sanguineo", "coombs", 
+    "subunidad beta", "test rapido", "biologia molecular", 
+    "hemograma", "coagulacion", "creatinina"
+]
+
+def requiere_no_preparacion(nombre_test):
+    norm = normalizar(nombre_test)
+    return any(k in norm for k in NO_REQUIERE_PREPARACION)
+
 # ==============================================================================
-# 🎨 FUNCIÓN DE DIBUJO DE TARJETAS (NOMBRES ANCLADOS Y FILTROS)
+# 🎨 FUNCIÓN DE DIBUJO DE TARJETAS (NOMBRES ANCLADOS ARRIBA Y FILTROS)
 # ==============================================================================
 def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     # 1. Identificar Nombre
@@ -218,8 +230,6 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
             if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)): col_nombre_final = c; break
     if not col_nombre_final and posibles_nombres: col_nombre_final = posibles_nombres[0]
 
-    cols_esenciales = [col_nombre_final] if col_nombre_final else []
-
     # 2. Lógica Láser (Búsquedas Específicas)
     has_fonasa = "fonasa" in palabras
     has_particular = "particular" in palabras
@@ -228,15 +238,15 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     cols_especificas = []
     if has_fonasa and not has_particular:
         for c in fila_dict.keys():
-            if es_col_precio_fonasa(c) or "valor" in normalizar(str(c)) or "precio" in normalizar(str(c)): cols_especificas.append(c)
+            if es_col_precio(c): cols_especificas.append(c)
             elif any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["fonasa", "copago", "2026"]): cols_especificas.append(c)
     elif has_particular and not has_fonasa:
         for c in fila_dict.keys():
-            if es_col_precio_particular(c) or "valor" in normalizar(str(c)) or "precio" in normalizar(str(c)): cols_especificas.append(c)
+            if es_col_precio(c): cols_especificas.append(c)
             elif any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["particular", "valor", "2026"]): cols_especificas.append(c)
     elif has_precio:
         for c in fila_dict.keys():
-            if es_col_precio_fonasa(c) or es_col_precio_particular(c) or "valor" in normalizar(str(c)) or "precio" in normalizar(str(c)): cols_especificas.append(c)
+            if es_col_precio(c): cols_especificas.append(c)
             elif any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["fonasa", "particular", "precio", "valor", "arancel", "copago"]): cols_especificas.append(c)
     else:
         for c in fila_dict.keys():
@@ -244,42 +254,54 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
                 cols_especificas.append(c)
 
     if cols_especificas or has_fonasa or has_particular or has_precio:
-        cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
+        cols_a_mostrar = list(dict.fromkeys(([col_nombre_final] if col_nombre_final else []) + cols_especificas))
     else:
         cols_a_mostrar = list(fila_dict.keys())
 
-    # 3. FILTRO BASURA Y EXCLUSIONES
+    # 3. FILTRO BASURA, DUPLICADOS Y CATEGORÍAS
+    columnas_basura = ["sinonimo", "sinónimo", "palabra", "item"]
+    columnas_categoria_meta = ["categoria", "tema", "protocolo", "respuesta"]
+
     cols_filtradas = []
     for c in cols_a_mostrar:
         if c == "__hoja_origen__" or c == "__puntaje__": continue
         cn = normalizar(str(c))
         val_norm = normalizar(str(fila_dict[c]))
 
-        # Destruir columnas basura (sinónimos, items, etc)
-        if any(b in cn for b in ["sinonimo", "sinónimo", "palabra", "item"]): continue
+        # Destruir columnas basura
+        if any(b in cn for b in columnas_basura): continue
         
-        # Destruir nombres duplicados, conservar solo el oficial
-        if es_col_nombre(c) and c != col_nombre_final: continue
+        # Destruir nombres duplicados, conservar solo col_nombre_final
+        if es_col_nombre(c) and col_nombre_final and c != col_nombre_final: continue
 
-        # REGLA AZUL: Ocultar Categoría Examen, Categoría, Tema (A MENOS que el usuario haya buscado una palabra dentro)
-        if cn == "categoria" or cn == "categoria examen" or cn == "tema":
-            if not any(p in val_norm for p in palabras_filtro):
-                continue # Lo oculta
+        # REGLA AZUL: Ocultar Categorías o Temas a menos que el usuario busque un término adentro
+        if any(m in cn for m in columnas_categoria_meta):
+            if not any(p in cn or p in val_norm for p in palabras_filtro):
+                continue
 
         cols_filtradas.append(c)
 
     cols_a_mostrar = cols_filtradas
 
-    # 4. DIBUJAR HTML
+    # 4. DIBUJAR HTML (REGLA: NOMBRE SIEMPRE EN LA LÍNEA 1 ARRIBA)
     contenido_tarjeta = ""
     
-    # 👑 ANCLAR OBLIGATORIAMENTE EL NOMBRE ARRIBA DE TODO
-    if col_nombre_final and col_nombre_final in cols_a_mostrar:
-        val_str = str(fila_dict[col_nombre_final])
-        if val_str.strip() != "":
-            contenido_tarjeta += f'<div class="row-item"><span class="col-name" style="font-size: 1.1em; color: #d4af37;">{col_nombre_final}:</span> <span class="col-val" style="font-size: 1.1em; font-weight: bold;">{val_str}</span></div>'
-        cols_a_mostrar.remove(col_nombre_final)
+    if col_nombre_final:
+        val_str_nombre = str(fila_dict.get(col_nombre_final, "")).strip()
+        if val_str_nombre != "":
+            contenido_tarjeta += f'<div class="row-item"><span class="col-name" style="font-size: 1.05em; color: #6a1b29;">{col_nombre_final}:</span> <span class="col-val" style="font-size: 1.05em; font-weight: bold;">{val_str_nombre}</span></div>'
+        if col_nombre_final in cols_a_mostrar:
+            cols_a_mostrar.remove(col_nombre_final)
 
+    # 💉 INYECTAR AUTOMÁTICAMENTE "NO REQUIERE PREPARACIÓN" SI CORRESPONDE
+    if col_nombre_final:
+        val_nombre = str(fila_dict.get(col_nombre_final, ""))
+        if requiere_no_preparacion(val_nombre):
+            has_explicit_prep = any("preparac" in normalizar(str(c)) or "indicac" in normalizar(str(c)) for c in cols_a_mostrar)
+            if not has_explicit_prep:
+                contenido_tarjeta += '<div class="row-item"><span class="col-name">Indicaciones / Preparación:</span> <span class="col-val" style="color: #2e7d32; font-weight: 600;">No requiere preparación</span></div>'
+
+    # Renderizar el resto de columnas
     for col in cols_a_mostrar:
         val = fila_dict[col]
         if str(val).strip() != "":
@@ -304,7 +326,7 @@ if consulta.strip() and dict_hojas_excel is not None:
     query_clean = consulta.strip()
 
     # ---------------------------------------------------------
-    # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (SUMA INTACTA)
+    # 🔒 MODO 1: COTIZADOR AUTOMÁTICO (SUMA INTACTA 100%)
     # ---------------------------------------------------------
     if query_clean.lower().startswith("suma "):
         df_prestaciones = obtener_df_segun_modo(dict_hojas_excel, es_modo_bk=False)
@@ -472,6 +494,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                     renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
 
                 else:
-                    # 🧠 COMPORTAMIENTO NORMAL: Mostrar como siempre (Ej: Hemograma)
+                    # 🧠 COMPORTAMIENTO NORMAL: Mostrar cada tarjeta individualmente (Ej: Hemograma)
                     for f in lista_filas:
                         renderizar_tarjeta(f, palabras, palabras_filtro)
