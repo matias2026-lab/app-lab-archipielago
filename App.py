@@ -47,7 +47,6 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
 st.markdown(
     """
     <style>
-    /* Bloqueo PWA Nativo */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     .stApp { background-color: #6a1b29; color: #ffffff; }
@@ -265,11 +264,10 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER (DISEÑO QUIRÚRGICO)
+    # 🌟 MODO 2: BÚSQUEDA GENERAL LÁSER 
     # ---------------------------------------------------------
     else:
         palabras = [p for p in normalizar(query_clean).split() if p]
-        
         df_todas_las_hojas = pd.concat(list(dict_hojas_excel.values()), ignore_index=True).fillna("")
 
         def coincide_examen_general(fila):
@@ -310,7 +308,6 @@ if consulta.strip() and dict_hojas_excel is not None:
 
             for _, fila in resultados_mostrar.iterrows():
                 
-                # 1. 🎯 Identificar el Nombre del Examen
                 posibles_nombres = []
                 for c in fila.index:
                     cn = normalizar(str(c))
@@ -337,7 +334,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                 has_particular = "particular" in palabras
                 has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
                 
-                # 2. 🎯 Filtro Láser de Especificaciones
                 cols_especificas = []
                 palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
                 
@@ -367,34 +363,28 @@ if consulta.strip() and dict_hojas_excel is not None:
                         if any(term in cn for term in palabras_filtro):
                             cols_especificas.append(c)
 
-                # 3. 🎯 Enciclopedia vs Láser
                 if cols_especificas or has_fonasa or has_particular or has_precio:
                     cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
                 else:
                     cols_a_mostrar = list(fila.index)
 
-                # 4. 🚫 LA LISTA NEGRA: Eliminar basura visual, redundancias y sinónimos
                 columnas_basura = ["sinonimo", "sinónimo", "palabra", "item"]
                 
                 cols_filtradas = []
                 for c in cols_a_mostrar:
                     cn = normalizar(str(c))
-                    # Es basura? (Ej: "ITEM", "Palabras claves", "Sinonimos")
                     if any(b in cn for b in columnas_basura):
                         continue
-                    # Es un nombre duplicado? (Ej: "EXAMEN" cuando ya tenemos "PRESTACIONES ARCHIPIELAGO")
                     if c in posibles_nombres and c != col_nombre_final:
                         continue
                     cols_filtradas.append(c)
                     
                 cols_a_mostrar = cols_filtradas
 
-                # 5. 👑 CORONACIÓN: Forzar que el Nombre esté SIEMPRE de primero (Index 0)
                 if col_nombre_final and col_nombre_final in cols_a_mostrar:
                     cols_a_mostrar.remove(col_nombre_final)
                     cols_a_mostrar.insert(0, col_nombre_final)
 
-                # 💳 RENDERIZADO VISUAL
                 contenido_tarjeta = ""
                 for col in cols_a_mostrar:
                     val = fila[col]
@@ -405,13 +395,10 @@ if consulta.strip() and dict_hojas_excel is not None:
                         else:
                             val_str = str(val)
                             
-                        col_norm = normalizar(str(col))
-                        val_norm = normalizar(str(val))
-                        es_buscado = any(term in col_norm or term in val_norm for term in palabras)
-                        estilo = "background-color: rgba(212, 175, 55, 0.15); border-left: 4px solid #d4af37;" if es_buscado else ""
+                        # ELIMINADA LÓGICA DEL FONDO AMARILLO ❌
+                        estilo = ""
                         
                         contenido_tarjeta += f'<div class="row-item" style="{estilo}"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
                 
-                # 🚫 SEGURO ANTI-BARRAS VACÍAS
                 if contenido_tarjeta.strip() != "":
                     st.markdown(f'<div class="card-box">{contenido_tarjeta}</div>', unsafe_allow_html=True)
