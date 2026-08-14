@@ -205,16 +205,28 @@ def es_col_nombre(c):
     cn = normalizar(str(c))
     return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or cn == "examen"
 
-# LISTA DE EXÁMENES QUE NO REQUIEREN PREPARACIÓN
-NO_REQUIERE_PREPARACION = [
-    "f.r", "factor reumatoide", "grupo sanguineo", "coombs", 
-    "subunidad beta", "test rapido", "biologia molecular", 
-    "hemograma", "coagulacion", "creatinina"
-]
-
+# DETECTOR AMPLIADO DE EXÁMENES QUE NO REQUIEREN PREPARACIÓN
 def requiere_no_preparacion(nombre_test):
     norm = normalizar(nombre_test)
-    return any(k in norm for k in NO_REQUIERE_PREPARACION)
+    palabras_test = set(re.findall(r'\b\w+\b', norm))
+    
+    # Siglas / palabras cortas exactas o subpalabras explícitas
+    siglas_exactas = ["tp", "tt", "ttpa", "ttpk", "pcr", "gen", "fr", "f.r"]
+    for sigla in siglas_exactas:
+        if sigla in palabras_test or sigla in norm:
+            return True
+            
+    # Nombres o términos descriptivos ampliados (Biología Molecular, Coagulación, etc)
+    frases = [
+        "factor reumatoide", "grupo sanguineo", "grupo y rh", "coombs",
+        "subunidad beta", "beta hcg", "test rapido", "biologia molecular",
+        "mutacion", "hemograma", "coagulacion", "fibrinogeno", "creatinina"
+    ]
+    for frase in frases:
+        if frase in norm:
+            return True
+            
+    return False
 
 # ==============================================================================
 # 🎨 FUNCIÓN DE DIBUJO DE TARJETAS (NOMBRES ANCLADOS ARRIBA Y FILTROS)
@@ -238,15 +250,15 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     cols_especificas = []
     if has_fonasa and not has_particular:
         for c in fila_dict.keys():
-            if es_col_precio(c): cols_especificas.append(c)
+            if es_col_precio(c) or "valor" in normalizar(str(c)) or "precio" in normalizar(str(c)): cols_especificas.append(c)
             elif any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["fonasa", "copago", "2026"]): cols_especificas.append(c)
     elif has_particular and not has_fonasa:
         for c in fila_dict.keys():
-            if es_col_precio(c): cols_especificas.append(c)
+            if es_col_precio(c) or "valor" in normalizar(str(c)) or "precio" in normalizar(str(c)): cols_especificas.append(c)
             elif any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["particular", "valor", "2026"]): cols_especificas.append(c)
     elif has_precio:
         for c in fila_dict.keys():
-            if es_col_precio(c): cols_especificas.append(c)
+            if es_col_precio(c) or "valor" in normalizar(str(c)) or "precio" in normalizar(str(c)): cols_especificas.append(c)
             elif any(p in normalizar(str(c)) for p in palabras_filtro if p not in ["fonasa", "particular", "precio", "valor", "arancel", "copago"]): cols_especificas.append(c)
     else:
         for c in fila_dict.keys():
@@ -299,7 +311,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
         if requiere_no_preparacion(val_nombre):
             has_explicit_prep = any("preparac" in normalizar(str(c)) or "indicac" in normalizar(str(c)) for c in cols_a_mostrar)
             if not has_explicit_prep:
-                contenido_tarjeta += '<div class="row-item"><span class="col-name">Indicaciones / Preparación:</span> <span class="col-val" style="color: #2e7d32; font-weight: 600;">No requiere preparación</span></div>'
+                contenido_tarjeta += '<div class="row-item"><span class="col-name">Indicaciones:</span> <span class="col-val" style="color: #2e7d32; font-weight: 600;">No requiere preparacion</span></div>'
 
     # Renderizar el resto de columnas
     for col in cols_a_mostrar:
