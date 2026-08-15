@@ -207,16 +207,33 @@ def es_col_nombre(c):
     cn = normalizar(str(c)).strip()
     return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or "examen" in cn or "unnamed" in cn
 
+# NUEVA FUNCIÓN: AGRUPAMIENTO INTELIGENTE (Fuzzy Match)
+def normalizar_nombre_agrupacion(nombre):
+    n = normalizar(str(nombre)).strip()
+    n = re.sub(r'[^\w\s]', '', n) # Elimina signos de puntuación como paréntesis para comparar limpio
+    palabras = [p for p in n.split() if p not in ["de", "la", "el", "los", "las", "en", "con", "para", "y", "o"]]
+    return " ".join(palabras)
+
+def obtener_mejor_col_nombre(f_dict):
+    posibles = [c for c in f_dict.keys() if es_col_nombre(c) and c not in ["__hoja_origen__", "__puntaje__"] and str(f_dict[c]).strip() != "" and "sinonimo" not in normalizar(str(c))]
+    for c in posibles:
+        if "archipielago" in normalizar(str(c)): return c, True
+    for c in posibles:
+        if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)): return c, True
+    if posibles: return posibles[0], True
+    
+    # Fallback para hojas como Horarios
+    for c in f_dict.keys():
+        if c not in ["__hoja_origen__", "__puntaje__"] and str(f_dict[c]).strip() != "":
+            return c, False
+    return None, False
+
 # DETECTOR AMPLIADO DE EXÁMENES QUE NO REQUIEREN PREPARACIÓN
 def requiere_no_preparacion(nombre_test):
     norm = normalizar(nombre_test)
     palabras_test = set(re.findall(r'\b\w+\b', norm))
-    
-    # Siglas exactas
     siglas = ["tp", "tt", "ttpa", "ttpk", "pcr", "gen", "fr"]
     if any(s in palabras_test for s in siglas) or "f.r" in norm: return True
-            
-    # Frases o términos compuestos
     frases = [
         "factor reumatoide", "grupo sanguineo", "grupo y rh", "coombs",
         "subunidad beta", "beta hcg", "test rapido", "biologia molecular",
@@ -226,38 +243,17 @@ def requiere_no_preparacion(nombre_test):
     return False
 
 # ==============================================================================
-# 🎨 FUNCIÓN DE DIBUJO DE TARJETAS (NOMBRES ANCLADOS ARRIBA Y FILTROS)
+# 🎨 FUNCIÓN DE DIBUJO DE TARJETAS
 # ==============================================================================
 def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     
-    # --- PUENTE INTELIGENTE PARA MOSTRAR HORARIOS ---
     palabras_f = palabras_filtro.copy()
     if "horario" in palabras_f or "horarios" in palabras_f:
         palabras_f.extend(["horario", "horarios", "condicion", "condiciones", "lunes", "sabado", "viernes"])
 
-    # 1. Identificar Nombre
-    posibles_nombres = [c for c in fila_dict.keys() if es_col_nombre(c) and c not in ["__hoja_origen__", "__puntaje__"] and str(fila_dict[c]).strip() != "" and "sinonimo" not in normalizar(str(c))]
-    col_nombre_final = None
-    
-    # Jerarquía
-    for c in posibles_nombres:
-        if "archipielago" in normalizar(str(c)): col_nombre_final = c; break
-    if not col_nombre_final:
-        for c in posibles_nombres:
-            if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)): col_nombre_final = c; break
-    if not col_nombre_final and posibles_nombres: 
-        col_nombre_final = posibles_nombres[0]
-
-    # 🚀 FALLBACK SUPREMO (Ej: Hoja Horarios)
-    if not col_nombre_final:
-        for c in fila_dict.keys():
-            if c not in ["__hoja_origen__", "__puntaje__"] and str(fila_dict[c]).strip() != "":
-                col_nombre_final = c
-                break
-
+    col_nombre_final, es_nombre_oficial = obtener_mejor_col_nombre(fila_dict)
     cols_esenciales = [col_nombre_final] if col_nombre_final else []
 
-    # 2. Lógica Láser
     has_fonasa = "fonasa" in palabras
     has_particular = "particular" in palabras
     has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
@@ -285,21 +281,15 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     else:
         cols_a_mostrar = list(fila_dict.keys())
 
-    # 3. FILTRO BASURA, DUPLICADOS Y CATEGORÍAS
     cols_filtradas = []
     for c in cols_a_mostrar:
         if c in ["__hoja_origen__", "__puntaje__"]: continue
         cn = normalizar(str(c))
         val_norm = normalizar(str(fila_dict[c]))
 
-        # Destruir columnas basura 
         if any(b in cn for b in ["sinonimo", "sinónimo", "palabra", "item", "tema/examen", "tema / examen"]): continue
-        
-        # Destruir nombres duplicados
         if es_col_nombre(c) and col_nombre_final and c != col_nombre_final: continue
 
-        # REGLA AZUL: Ocultar SOLO Categoría y Tema a menos que la búsqueda coincida con su contenido
-        # NOTA: Protocolo / Respuesta SE MUESTRA NORMALMENTE.
         if any(m in cn for m in ["categoria", "tema"]):
             if not any(p in val_norm for p in palabras):
                 continue
@@ -308,7 +298,6 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
 
     cols_a_mostrar = cols_filtradas
 
-    # 4. DIBUJAR HTML (NOMBRE SIEMPRE EN LA LÍNEA 1 ARRIBA Y DESTACADO)
     contenido_tarjeta = ""
     
     if col_nombre_final:
@@ -316,8 +305,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
         if val_str_nombre != "":
             cn_final = normalizar(str(col_nombre_final)).strip()
             
-            # MAGIA DEL FALLBACK
-            es_titulo_limpio = (cn_final == "" or "unnamed" in cn_final or "tema" in cn_final or "examen" == cn_final or col_nombre_final not in posibles_nombres)
+            es_titulo_limpio = (not es_nombre_oficial or cn_final == "" or "unnamed" in cn_final or "tema" in cn_final or "examen" == cn_final)
             
             if es_titulo_limpio:
                 contenido_tarjeta += f'<div class="row-item" style="margin-bottom: 12px; border-bottom: 2px solid #d4af37; padding-bottom: 8px;"><span class="col-val" style="font-size: 1.15em; font-weight: 800; color: #1a1a1a; text-transform: uppercase;">{val_str_nombre}</span></div>'
@@ -327,7 +315,6 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
         if col_nombre_final in cols_a_mostrar:
             cols_a_mostrar.remove(col_nombre_final)
 
-    # 💉 INYECTAR "NO REQUIERE PREPARACIÓN"
     if col_nombre_final:
         val_nombre = str(fila_dict.get(col_nombre_final, ""))
         if requiere_no_preparacion(val_nombre):
@@ -335,7 +322,6 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
             if not has_explicit_prep:
                 contenido_tarjeta += '<div class="row-item"><span class="col-name">Indicaciones:</span> <span class="col-val" style="color: #2e7d32; font-weight: 700;">No requiere preparación</span></div>'
 
-    # Renderizar el resto de columnas
     for col in cols_a_mostrar:
         val = fila_dict[col]
         if str(val).strip() != "":
@@ -421,7 +407,7 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA GENERAL ORQUESTADA (CON INYECTOR)
+    # 🌟 MODO 2: BÚSQUEDA GENERAL ORQUESTADA
     # ---------------------------------------------------------
     else:
         palabras = [p for p in normalizar(query_clean).split() if p]
@@ -432,26 +418,16 @@ if consulta.strip() and dict_hojas_excel is not None:
         def coincide_examen_general(fila):
             hoja_origen = normalizar(str(fila.get("__hoja_origen__", "")))
 
-            # ⏰ 1. AISLAMIENTO ESTRICTO DE HORARIOS (Filtra a Cortisol si no lo pides)
             if query_clean.lower() in ["horario", "horarios", "flujos", "horarios y flujos"]:
                 if "horario" in hoja_origen or "flujo" in hoja_origen:
                     nombre_examen_oculto = ""
-                    
-                    col_n_local = None
-                    for c in fila.keys():
-                        if es_col_nombre(c) and c not in ["__hoja_origen__", "__puntaje__"] and str(fila[c]).strip() != "": col_n_local = c; break
-                    if not col_n_local:
-                        for c in fila.keys():
-                            if c not in ["__hoja_origen__", "__puntaje__"] and str(fila[c]).strip() != "": col_n_local = c; break
-                            
+                    col_n_local, _ = obtener_mejor_col_nombre(fila)
                     if col_n_local: nombre_examen_oculto = str(fila[col_n_local]).lower()
-                        
                     if "cortisol" in nombre_examen_oculto:
                         return False
                     return True
                 return False
 
-            # 2. BÚSQUEDA NORMAL
             elementos_validos = []
             tiene_plata = False
             tiene_codigo = False
@@ -471,7 +447,6 @@ if consulta.strip() and dict_hojas_excel is not None:
             if tiene_plata: columnas_str += " precio precios valor valores arancel copago fonasa particular"
             if tiene_codigo: columnas_str += " codigo codigos"
                 
-            # 💉 INYECTOR DE BÚSQUEDA PARA "SIN PREPARACIÓN"
             valores_para_filtro = valores_str
             if requiere_no_preparacion(nombre_examen_oculto):
                 inyeccion = " examen examenes sin preparacion no requiere preparacion indicaciones horario horarios"
@@ -481,11 +456,9 @@ if consulta.strip() and dict_hojas_excel is not None:
 
             texto_total = valores_str + " " + columnas_str
             
-            # REGLA A: Todo lo que escribas debe existir en la fila
             if not all(term in texto_total for term in palabras):
                 return False
                 
-            # REGLA B (ESCUDO ANTI-RUIDO): Al menos una palabra buscada debe coincidir con el VALOR real
             if not any(term in valores_para_filtro for term in palabras):
                 return False
                 
@@ -509,22 +482,14 @@ if consulta.strip() and dict_hojas_excel is not None:
             
             resultados_mostrar = df_resultados.head(150)
 
-            # --- AGRUPAR EXÁMENES POR NOMBRE PARA DETECTAR COLISIONES ---
+            # --- AGRUPAR EXÁMENES MEDIANTE FUZZY MATCH ---
             examenes_agrupados = {}
             for _, fila in resultados_mostrar.iterrows():
                 f_dict = fila.to_dict()
                 
-                col_n = None
-                for c in f_dict.keys():
-                    if es_col_nombre(c) and c not in ["__hoja_origen__", "__puntaje__"] and str(f_dict[c]).strip() != "": col_n = c; break
-                
-                # Identificación por Fallback para agrupar
-                if not col_n:
-                    for c in f_dict.keys():
-                        if c not in ["__hoja_origen__", "__puntaje__"] and str(f_dict[c]).strip() != "": col_n = c; break
-                
-                n_val = str(f_dict[col_n]).strip() if col_n else str(list(f_dict.values())[0])
-                n_norm = normalizar(n_val)
+                col_n, _ = obtener_mejor_col_nombre(f_dict)
+                n_val = str(f_dict[col_n]).strip() if col_n else ""
+                n_norm = normalizar_nombre_agrupacion(n_val) # <- TRADUCTOR ACTIVO
                 
                 if n_norm not in examenes_agrupados: 
                     examenes_agrupados[n_norm] = {'filas': [], 'puntaje': f_dict['__puntaje__']}
@@ -539,7 +504,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                 tiene_gine = any("ginecologico" in normalizar(str(f.get("__hoja_origen__", ""))) for f in lista_filas)
                 tiene_prest = any("prestac" in normalizar(str(f.get("__hoja_origen__", ""))) for f in lista_filas)
 
-                # 🧠 REGLA MAESTRA: SOLO FUSIONAR SI ESTÁ EN GINECOLÓGICO Y EN PRESTACIONES
+                # 🧠 REGLA MAESTRA DE FUSIÓN SEGURA
                 if tiene_gine and tiene_prest:
                     fila_gine = next((f for f in lista_filas if "ginecologico" in normalizar(str(f.get("__hoja_origen__", "")))), None)
                     fila_prest = next((f for f in lista_filas if "prestac" in normalizar(str(f.get("__hoja_origen__", "")))), None)
@@ -548,18 +513,38 @@ if consulta.strip() and dict_hojas_excel is not None:
 
                     fila_consolidada = {}
 
-                    # 1. Absorber Prestaciones (Omitiendo lo que Gine va a reemplazar)
+                    # 1. Absorber Prestaciones 
                     for c, v in fila_prest.items():
                         if c in ["__hoja_origen__", "__puntaje__"] or str(v).strip() == "": continue
-                        if es_col_nombre(c) or es_col_precio(c) or es_col_tiempo(c) or es_col_contenedor(c) or es_col_muestra(c) or es_col_incluye(c): continue
-                        fila_consolidada[c] = v
+                        
+                        cn = normalizar(str(c))
+                        skip = False
+                        
+                        if es_col_nombre(c): skip = True
+                        
+                        # 🚫 Omite Valores Particulares de Prestaciones (Conserva Fonasa) si Ginecológico trae precio
+                        if any(es_col_precio(gc) for gc in fila_gine.keys() if str(fila_gine[gc]).strip() != ""):
+                            if "particular" in cn or ("valor" in cn and "fonasa" not in cn): skip = True
+                        
+                        if any(es_col_tiempo(gc) for gc in fila_gine.keys() if str(fila_gine[gc]).strip() != ""):
+                            if es_col_tiempo(c): skip = True
+                            
+                        if any(es_col_contenedor(gc) for gc in fila_gine.keys() if str(fila_gine[gc]).strip() != ""):
+                            if es_col_contenedor(c): skip = True
+                            
+                        if any(es_col_muestra(gc) for gc in fila_gine.keys() if str(fila_gine[gc]).strip() != ""):
+                            if es_col_muestra(c): skip = True
+                            
+                        if any(es_col_incluye(gc) for gc in fila_gine.keys() if str(fila_gine[gc]).strip() != ""):
+                            if es_col_incluye(c): skip = True
+
+                        if not skip:
+                            fila_consolidada[c] = v
 
                     # 2. Imponer Reglas de Maestro Ginecológico
-                    nombres_gine = [c for c in fila_gine.keys() if es_col_nombre(c) and c not in ["__hoja_origen__", "__puntaje__"] and str(fila_gine[c]).strip() != ""]
-                    if nombres_gine:
-                        nombres_viejos = [c for c in fila_consolidada.keys() if es_col_nombre(c)]
-                        for nv in nombres_viejos: del fila_consolidada[nv]
-                        fila_consolidada[nombres_gine[0]] = fila_gine[nombres_gine[0]] 
+                    col_n_gine, _ = obtener_mejor_col_nombre(fila_gine)
+                    if col_n_gine:
+                        fila_consolidada[col_n_gine] = fila_gine[col_n_gine] 
                     
                     for c, v in fila_gine.items():
                         if c in ["__hoja_origen__", "__puntaje__"] or str(v).strip() == "": continue
@@ -572,7 +557,7 @@ if consulta.strip() and dict_hojas_excel is not None:
                             if str(v).strip() != "" and es_col_codigo(c) and c not in ["__hoja_origen__", "__puntaje__"]:
                                 fila_consolidada[c] = v
 
-                    # 4. WhatsApp y Otras hojas (Evitando duplicar nombres)
+                    # 4. WhatsApp y Otras hojas
                     for f in filas_otras:
                         for c, v in f.items():
                             if c in ["__hoja_origen__", "__puntaje__"] or str(v).strip() == "" or es_col_nombre(c): continue
@@ -581,6 +566,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                     renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
 
                 else:
-                    # 🧠 COMPORTAMIENTO INDIVIDUAL
+                    # 🧠 COMPORTAMIENTO INDIVIDUAL 
                     for f in lista_filas:
                         renderizar_tarjeta(f, palabras, palabras_filtro)
