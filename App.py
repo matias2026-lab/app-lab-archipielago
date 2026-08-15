@@ -42,7 +42,7 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PURIFICADOS (PESTAÑAS FIJAS EN AMARILLO/DORADO)
+# 🎨 ESTILOS CSS PURIFICADOS (PESTAÑAS SIEMPRE AMARILLAS)
 # ==============================================================================
 st.markdown(
     """
@@ -68,32 +68,19 @@ st.markdown(
     }
     div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* 🟡 PESTAÑAS (TABS) - AMARILLO/DORADO PERMANENTE */
-    [data-testid="stTabs"] button,
-    [data-testid="stTabs"] [data-baseweb="tab"],
-    [data-testid="stTabs"] button p, 
-    [data-testid="stTabs"] button span, 
-    [data-testid="stTabs"] button div {
+    /* 🟡 PESTAÑAS (TABS) - AMARILLO/DORADO PERMANENTE, INCLUSO INACTIVAS */
+    div[data-testid="stTabs"] button,
+    div[data-testid="stTabs"] button p, 
+    div[data-testid="stTabs"] button span {
         color: #d4af37 !important;
         font-size: 1.15em !important;
         font-weight: 800 !important;
     }
-    [data-testid="stTabs"] button:hover,
-    [data-testid="stTabs"] button:focus,
-    [data-testid="stTabs"] button:active {
-        color: #ffd700 !important;
-    }
-    [data-testid="stTabs"] [aria-selected="true"] {
+    /* Estilo de la pestaña seleccionada */
+    div[data-testid="stTabs"] button[aria-selected="true"] {
         border-bottom: 3px solid #d4af37 !important;
-        color: #d4af37 !important;
     }
-    [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
-        background-color: #d4af37 !important;
-    }
-    [data-testid="stTabs"] [data-baseweb="tab-border"] {
-        background-color: rgba(212, 175, 55, 0.3) !important;
-    }
-
+    
     /* 🟡 Radio Buttons (Particular, Fonasa) - AMARILLO/DORADO */
     div[role="radiogroup"] label p, 
     div[role="radiogroup"] label span,
@@ -354,6 +341,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     # 1. Título Principal
     if col_nombre_final:
         val_str_nombre = str(fila_dict.get(col_nombre_final, "")).strip()
+        
         es_sin_prep_test = verificar_es_sin_prep(val_str_nombre)
 
         if val_str_nombre != "":
