@@ -42,42 +42,57 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PURIFICADOS (DISEÑO ORIGINAL)
+# 🎨 ESTILOS CSS PURIFICADOS (V2.0 - DISEÑO ORIGINAL RESTAURADO Y CONTRASTES MEJORADOS)
 # ==============================================================================
 st.markdown(
     """
     <style>
+    /* Fondo general */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     .stApp { background-color: #6a1b29; color: #ffffff; }
     
+    /* Ocultar elementos innecesarios */
     footer, #MainMenu, header, .stActionButton, .stDeployButton { display: none !important; visibility: hidden !important; }
     [data-testid="InputInstructions"], [data-testid="stInputInstructions"] { display: none !important; }
     
+    /* Formulario de Login */
     div[data-testid="stForm"] { background-color: transparent !important; border: 2px solid #d4af37 !important; border-radius: 16px !important; padding: 25px 20px !important; }
+    
+    /* Etiquetas de los inputs (Usuario, Contraseña) en blanco */
     .stTextInput label p, .stTextInput label, label { color: #ffffff !important; font-weight: 700 !important; font-size: 16px !important; }
     
-    div[data-testid="stButton"] > button {
+    /* Botones (Iniciar Sesión, Cerrar Sesión) - Fondo oscuro, texto blanco */
+    div[data-testid="stButton"] > button, div[data-testid="stFormSubmitButton"] > button {
         background-color: #48121b !important; color: #ffffff !important; border: 1.5px solid #d4af37 !important; border-radius: 10px !important;
         font-weight: 700 !important; font-size: 15px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
         transition: 0.2s; width: 100% !important; margin-top: 10px !important;
     }
-    div[data-testid="stButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
+    div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* Estilos de Pestañas sin íconos */
+    /* Estilos de Pestañas sin íconos - Solucionado contraste azul/rojo */
     [data-testid="stTabs"] button { color: #ffffff !important; font-size: 1.1em !important; font-weight: 700 !important; }
     [data-testid="stTabs"] button[aria-selected="true"] { color: #d4af37 !important; border-bottom: 3px solid #d4af37 !important; }
-    
+    [data-testid="stTabs"] button p { color: inherit !important; } /* Fuerza que el texto herede el color */
+
+    /* Inputs de texto (Barras de búsqueda y login) - Fondo blanco, texto negro */
     div[data-baseweb="input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; border: none !important; }
     div[data-baseweb="input"] input { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-size: 16px !important; padding: 12px 18px !important; }
     
+    /* Tarjetas de resultados */
     .card-box { background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 25px; border-radius: 12px; border-left: 8px solid #d4af37; margin-bottom: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); }
     .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; border-radius: 6px; padding: 4px 6px;}
     .col-name { font-weight: 700; color: #6a1b29 !important; }
     .col-val { color: #222222 !important; font-weight: 500; }
+    
+    /* Títulos generales */
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
+    /* Contenedor cotizador */
     .cotizador-box { margin-bottom: 20px; padding-top: 10px; }
+    
+    /* Etiqueta Radio Button (Selecciona Previsión) en blanco */
+    div[role="radiogroup"] label { color: #ffffff !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -113,6 +128,7 @@ if not st.session_state.autenticado:
     with st.form("form_login", clear_on_submit=False):
       usuario_input = st.text_input("Usuario", placeholder="").strip()
       clave_input = st.text_input("Contraseña", type="password").strip()
+      # El CSS .stFormSubmitButton ahora asegura que este botón tenga fondo oscuro
       if st.form_submit_button("Iniciar Sesión", use_container_width=True):
         if usuario_input in USUARIOS and USUARIOS[usuario_input] == clave_input:
           st.session_state.autenticado = True
@@ -330,7 +346,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
                 
             contenido_tarjeta += f'<div class="row-item"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
             
-            # INYECCIÓN ESTRATÉGICA: Justo debajo de la columna "AYUNO" (Texto plano)
+            # INYECCIÓN ESTRATÉGICA: Justo debajo de la columna "AYUNO" (Texto plano, sin botón)
             if es_sin_prep_test and "ayuno" in normalizar(str(col)) and not mensaje_prep_impreso:
                 contenido_tarjeta += f'<div class="row-item"><span class="col-name">Indicaciones Extras:</span> <span class="col-val">Examen sin preparación</span></div>'
                 mensaje_prep_impreso = True
@@ -354,7 +370,7 @@ if dict_hojas_excel is not None:
     tab_buscador, tab_cotizador = st.tabs(["Buscador de Exámenes", "Cotizador Múltiple"])
 
     # ---------------------------------------------------------
-    # 🌟 PESTAÑA 1: BUSCADOR GENERAL
+    # 🌟 PESTAÑA 1: BUSCADOR GENERAL (LÓGICA ORIGINAL FLEXIBLE)
     # ---------------------------------------------------------
     with tab_buscador:
         # Se dejó el placeholder vacío según la solicitud
@@ -369,6 +385,7 @@ if dict_hojas_excel is not None:
             def coincide_examen_general(fila):
                 hoja_origen = normalizar(str(fila.get("__hoja_origen__", "")))
 
+                # 1. AISLAMIENTO ESTRICTO DE HORARIOS (Solo si buscas "horario" o "horarios" EXACTAMENTE solos)
                 if normalizar(consulta_b) in ["horario", "horarios", "flujos", "horarios y flujos"]:
                     if "horario" in hoja_origen or "flujo" in hoja_origen:
                         nombre_examen_oculto = ""
@@ -378,6 +395,7 @@ if dict_hojas_excel is not None:
                         return True
                     return False
 
+                # 2. BÚSQUEDA NORMAL FLEXIBLE
                 elementos_validos = []
                 tiene_plata = False
                 tiene_codigo = False
@@ -397,6 +415,7 @@ if dict_hojas_excel is not None:
                 if tiene_plata: columnas_str += " precio precios valor valores arancel copago fonasa particular"
                 if tiene_codigo: columnas_str += " codigo codigos"
                     
+                # INYECTOR PARA "SIN PREPARACIÓN"
                 if verificar_es_sin_prep(nombre_examen_oculto):
                     inyec = " examen examenes sin preparacion no requiere preparacion indicaciones"
                     valores_str += inyec
@@ -404,6 +423,7 @@ if dict_hojas_excel is not None:
 
                 texto_total = valores_str + " " + columnas_str
                 
+                # Para que funcione "calprotectina codigo" o "calprotectina horario"
                 if not all(term in texto_total for term in palabras):
                     return False
                     
@@ -426,6 +446,7 @@ if dict_hojas_excel is not None:
                 df_resultados = df_resultados.sort_values('__puntaje__')
                 resultados_mostrar = df_resultados.head(150)
 
+                # --- AGRUPAR EXÁMENES ---
                 examenes_agrupados = {}
                 for _, fila in resultados_mostrar.iterrows():
                     f_dict = fila.to_dict()
@@ -487,10 +508,10 @@ if dict_hojas_excel is not None:
     # 🧮 PESTAÑA 2: COTIZADOR MÚLTIPLE
     # ---------------------------------------------------------
     with tab_cotizador:
-        st.markdown("<h3 style='text-align: center; margin-top:0; color:#d4af37;'>Cotizador de Múltiples Exámenes</h3>", unsafe_allow_html=True)
+        st.write("") # Pequeño espacio superior opcional
         tipo_pago = st.radio("Selecciona la Previsión:", ["Particular", "Fonasa"], horizontal=True)
         
-        # Etiqueta colapsada y placeholder vacío según la solicitud
+        # Etiqueta colapsada y placeholder vacío según la solicitud, y sin el título en texto normal
         consulta_c = st.text_input("Cotizador", key="input_cotizador", placeholder="", label_visibility="collapsed")
         
         if consulta_c.strip():
