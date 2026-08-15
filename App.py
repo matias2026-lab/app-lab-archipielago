@@ -42,43 +42,51 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PURIFICADOS (DISEÑO ORIGINAL + CONTRASTE REFORZADO)
+# 🎨 ESTILOS CSS PURIFICADOS (DISEÑO ORIGINAL RESTAURADO Y CONTRASTES MEJORADOS)
 # ==============================================================================
 st.markdown(
     """
     <style>
+    /* Fondo general */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
     .stApp { background-color: #6a1b29; color: #ffffff; }
     
+    /* Ocultar elementos innecesarios */
     footer, #MainMenu, header, .stActionButton, .stDeployButton { display: none !important; visibility: hidden !important; }
     [data-testid="InputInstructions"], [data-testid="stInputInstructions"] { display: none !important; }
     
+    /* Formulario de Login */
     div[data-testid="stForm"] { background-color: transparent !important; border: 2px solid #d4af37 !important; border-radius: 16px !important; padding: 25px 20px !important; }
+    
+    /* Etiquetas de los inputs (Usuario, Contraseña) en blanco */
     .stTextInput label p, .stTextInput label, label { color: #ffffff !important; font-weight: 700 !important; font-size: 16px !important; }
     
-    div[data-testid="stButton"] > button {
+    /* Botones (Iniciar Sesión, Cerrar Sesión) - Fondo oscuro, texto blanco */
+    div[data-testid="stButton"] > button, div[data-testid="stFormSubmitButton"] > button {
         background-color: #48121b !important; color: #ffffff !important; border: 1.5px solid #d4af37 !important; border-radius: 10px !important;
         font-weight: 700 !important; font-size: 15px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
         transition: 0.2s; width: 100% !important; margin-top: 10px !important;
     }
-    div[data-testid="stButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
+    div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* Pestañas (Tabs) - Fuerza el color dorado en todo el texto de los botones para eliminar azul/rojo */
-    div[data-testid="stTabs"] button p, 
-    div[data-testid="stTabs"] button span, 
-    div[data-testid="stTabs"] button div {
+    /* Pestañas (Tabs) - Textos estrictamente amarillos/dorados */
+    [data-testid="stTabs"] button, 
+    [data-testid="stTabs"] button p, 
+    [data-testid="stTabs"] button span, 
+    [data-testid="stTabs"] button div {
         color: #d4af37 !important;
         font-size: 1.15em !important;
         font-weight: 800 !important;
     }
-    div[data-testid="stTabs"] button[aria-selected="true"] {
+    [data-testid="stTabs"] button[aria-selected="true"] {
         border-bottom: 3px solid #d4af37 !important;
     }
     
-    /* Radio Buttons (Particular, Fonasa) - Fuerza color dorado */
+    /* Radio Buttons (Particular, Fonasa) - Textos estrictamente amarillos/dorados */
     div[role="radiogroup"] label p, 
-    div[role="radiogroup"] label span {
+    div[role="radiogroup"] label span,
+    div[role="radiogroup"] label div {
         color: #d4af37 !important;
         font-weight: 700 !important;
         font-size: 16px !important;
@@ -90,15 +98,29 @@ st.markdown(
         color: #ffffff !important;
     }
     
-    div[data-baseweb="input"] { background-color: #ffffff !important; border-radius: 25px !important; color: #000000 !important; border: none !important; }
-    div[data-baseweb="input"] input { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-size: 16px !important; padding: 12px 18px !important; }
+    /* RECUPERADO: Inputs de texto (Barras de búsqueda y login) - Fondo blanco, texto negro perfecto */
+    div[data-baseweb="input"], div[data-baseweb="base-input"] { 
+        background-color: #ffffff !important; 
+        border-radius: 25px !important; 
+        border: none !important; 
+    }
+    div[data-baseweb="input"] input, div[data-baseweb="base-input"] input, input[type="text"], input[type="password"] { 
+        color: #000000 !important; 
+        -webkit-text-fill-color: #000000 !important; 
+        caret-color: #000000 !important; 
+        font-size: 16px !important; 
+        padding: 12px 18px !important; 
+        background-color: #ffffff !important;
+    }
     
+    /* Tarjetas de resultados */
     .card-box { background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 25px; border-radius: 12px; border-left: 8px solid #d4af37; margin-bottom: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); }
     .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; border-radius: 6px; padding: 4px 6px;}
     .col-name { font-weight: 700; color: #6a1b29 !important; }
     .col-val { color: #222222 !important; font-weight: 500; }
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
+    /* Contenedor cotizador */
     .cotizador-box { margin-bottom: 20px; padding-top: 10px; }
     </style>
     """,
@@ -517,7 +539,7 @@ if dict_hojas_excel is not None:
         st.write("") # Espacio para separar la barra superior
         tipo_pago = st.radio("Selecciona la Previsión:", ["Particular", "Fonasa"], horizontal=True)
         
-        # Etiqueta colapsada y placeholder vacío según la solicitud
+        # Etiqueta colapsada y placeholder vacío según la solicitud, y sin el título en texto normal
         consulta_c = st.text_input("Cotizador", key="input_cotizador", placeholder="", label_visibility="collapsed")
         
         if consulta_c.strip():
