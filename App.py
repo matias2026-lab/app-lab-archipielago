@@ -42,7 +42,7 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PURIFICADOS (DISEÑO ORIGINAL RESTAURADO)
+# 🎨 ESTILOS CSS PURIFICADOS (DISEÑO ORIGINAL)
 # ==============================================================================
 st.markdown(
     """
@@ -64,7 +64,7 @@ st.markdown(
     }
     div[data-testid="stButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* Pestañas (Tabs) */
+    /* Estilos de Pestañas sin íconos */
     [data-testid="stTabs"] button { color: #ffffff !important; font-size: 1.1em !important; font-weight: 700 !important; }
     [data-testid="stTabs"] button[aria-selected="true"] { color: #d4af37 !important; border-bottom: 3px solid #d4af37 !important; }
     
@@ -119,7 +119,7 @@ if not st.session_state.autenticado:
           st.session_state.usuario_actual = usuario_input
           st.rerun()
         else:
-          st.error("❌ Credenciales incorrectas.")
+          st.error("Credenciales incorrectas.")
   st.stop()
 
 def normalizar(texto):
@@ -242,7 +242,7 @@ def verificar_es_sin_prep(nombre_test):
     return False
 
 # ==============================================================================
-# 🎨 RENDERIZADOR GRÁFICO DE TARJETAS (DISEÑO ORIGINAL RESTAURADO)
+# 🎨 RENDERIZADOR GRÁFICO DE TARJETAS (DISEÑO TEXTO ORIGINAL)
 # ==============================================================================
 def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     
@@ -330,7 +330,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
                 
             contenido_tarjeta += f'<div class="row-item"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
             
-            # INYECCIÓN ESTRATÉGICA: Justo debajo de la columna "AYUNO" (Texto plano, sin botón)
+            # INYECCIÓN ESTRATÉGICA: Justo debajo de la columna "AYUNO" (Texto plano)
             if es_sin_prep_test and "ayuno" in normalizar(str(col)) and not mensaje_prep_impreso:
                 contenido_tarjeta += f'<div class="row-item"><span class="col-name">Indicaciones Extras:</span> <span class="col-val">Examen sin preparación</span></div>'
                 mensaje_prep_impreso = True
@@ -350,13 +350,15 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
 # ==============================================================================
 if dict_hojas_excel is not None:
     
-    tab_buscador, tab_cotizador = st.tabs(["🔍 Buscador de Exámenes", "🧮 Cotizador Múltiple"])
+    # Se eliminaron los íconos de las pestañas
+    tab_buscador, tab_cotizador = st.tabs(["Buscador de Exámenes", "Cotizador Múltiple"])
 
     # ---------------------------------------------------------
-    # 🌟 PESTAÑA 1: BUSCADOR GENERAL (LÓGICA ORIGINAL FLEXIBLE)
+    # 🌟 PESTAÑA 1: BUSCADOR GENERAL
     # ---------------------------------------------------------
     with tab_buscador:
-        consulta_b = st.text_input("Ingresa el examen o dato que buscas:", key="input_busqueda", placeholder="Ej: Calprotectina horario...")
+        # Se dejó el placeholder vacío según la solicitud
+        consulta_b = st.text_input("Búsqueda", key="input_busqueda", placeholder="", label_visibility="collapsed")
         
         if consulta_b.strip():
             palabras = [p for p in normalizar(consulta_b).split() if p]
@@ -367,7 +369,6 @@ if dict_hojas_excel is not None:
             def coincide_examen_general(fila):
                 hoja_origen = normalizar(str(fila.get("__hoja_origen__", "")))
 
-                # 1. AISLAMIENTO ESTRICTO DE HORARIOS (Solo si buscas "horario" o "horarios" EXACTAMENTE solos)
                 if normalizar(consulta_b) in ["horario", "horarios", "flujos", "horarios y flujos"]:
                     if "horario" in hoja_origen or "flujo" in hoja_origen:
                         nombre_examen_oculto = ""
@@ -377,7 +378,6 @@ if dict_hojas_excel is not None:
                         return True
                     return False
 
-                # 2. BÚSQUEDA NORMAL FLEXIBLE
                 elementos_validos = []
                 tiene_plata = False
                 tiene_codigo = False
@@ -397,7 +397,6 @@ if dict_hojas_excel is not None:
                 if tiene_plata: columnas_str += " precio precios valor valores arancel copago fonasa particular"
                 if tiene_codigo: columnas_str += " codigo codigos"
                     
-                # INYECTOR PARA "SIN PREPARACIÓN"
                 if verificar_es_sin_prep(nombre_examen_oculto):
                     inyec = " examen examenes sin preparacion no requiere preparacion indicaciones"
                     valores_str += inyec
@@ -405,7 +404,6 @@ if dict_hojas_excel is not None:
 
                 texto_total = valores_str + " " + columnas_str
                 
-                # Para que funcione "calprotectina codigo" o "calprotectina horario"
                 if not all(term in texto_total for term in palabras):
                     return False
                     
@@ -414,7 +412,7 @@ if dict_hojas_excel is not None:
             df_resultados = df_todas_las_hojas[df_todas_las_hojas.apply(coincide_examen_general, axis=1)]
 
             if df_resultados.empty:
-                st.warning(f"⚠️ No se encontró información para **'{consulta_b}'**.")
+                st.warning(f"No se encontró información para '{consulta_b}'.")
             else:
                 def calcular_puntaje_general(fila):
                     puntaje = 10000
@@ -428,7 +426,6 @@ if dict_hojas_excel is not None:
                 df_resultados = df_resultados.sort_values('__puntaje__')
                 resultados_mostrar = df_resultados.head(150)
 
-                # --- AGRUPAR EXÁMENES ---
                 examenes_agrupados = {}
                 for _, fila in resultados_mostrar.iterrows():
                     f_dict = fila.to_dict()
@@ -487,13 +484,14 @@ if dict_hojas_excel is not None:
                             renderizar_tarjeta(f, palabras, palabras_filtro)
 
     # ---------------------------------------------------------
-    # 🧮 PESTAÑA 2: COTIZADOR MÚLTIPLE (BÓVEDA AISLADA 🔒)
+    # 🧮 PESTAÑA 2: COTIZADOR MÚLTIPLE
     # ---------------------------------------------------------
     with tab_cotizador:
         st.markdown("<h3 style='text-align: center; margin-top:0; color:#d4af37;'>Cotizador de Múltiples Exámenes</h3>", unsafe_allow_html=True)
         tipo_pago = st.radio("Selecciona la Previsión:", ["Particular", "Fonasa"], horizontal=True)
         
-        consulta_c = st.text_input("Ingresa los exámenes separados por comas:", key="input_cotizador", placeholder="Ej: TSH, Glucosa, Perfil lipidico")
+        # Etiqueta colapsada y placeholder vacío según la solicitud
+        consulta_c = st.text_input("Cotizador", key="input_cotizador", placeholder="", label_visibility="collapsed")
         
         if consulta_c.strip():
             df_prestaciones = None
@@ -544,9 +542,9 @@ if dict_hojas_excel is not None:
                                 nombre_real = str(mejor_fila[c])
                                 if len(nombre_real) > 5: break
 
-                    st.success(f"✅ **{nombre.upper()}** ({nombre_real}) ➔ **{formatear_pesos(precio)}**")
+                    st.success(f"**{nombre.upper()}** ({nombre_real}) ➔ **{formatear_pesos(precio)}**")
                 else:
-                    st.error(f"❌ **{nombre.upper()}** ➔ No encontrado.")
+                    st.error(f"**{nombre.upper()}** ➔ No encontrado.")
                     
             st.divider()
             st.markdown(f"<h2 style='text-align: center; color: #ffffff;'>TOTAL {tipo_pago.upper()}: {formatear_pesos(total)}</h2>", unsafe_allow_html=True)
