@@ -42,7 +42,7 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PURIFICADOS (DISEÑO ORIGINAL RESTAURADO Y CONTRASTES MEJORADOS)
+# 🎨 ESTILOS CSS PURIFICADOS (PESTAÑAS FIJAS EN AMARILLO/DORADO)
 # ==============================================================================
 st.markdown(
     """
@@ -58,11 +58,9 @@ st.markdown(
     
     /* Formulario de Login */
     div[data-testid="stForm"] { background-color: transparent !important; border: 2px solid #d4af37 !important; border-radius: 16px !important; padding: 25px 20px !important; }
-    
-    /* Etiquetas de los inputs (Usuario, Contraseña) en blanco */
     .stTextInput label p, .stTextInput label, label { color: #ffffff !important; font-weight: 700 !important; font-size: 16px !important; }
     
-    /* Botones (Iniciar Sesión, Cerrar Sesión) - Fondo oscuro, texto blanco */
+    /* Botones */
     div[data-testid="stButton"] > button, div[data-testid="stFormSubmitButton"] > button {
         background-color: #48121b !important; color: #ffffff !important; border: 1.5px solid #d4af37 !important; border-radius: 10px !important;
         font-weight: 700 !important; font-size: 15px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
@@ -70,8 +68,9 @@ st.markdown(
     }
     div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* Pestañas (Tabs) - Textos estrictamente amarillos/dorados */
-    [data-testid="stTabs"] button, 
+    /* 🟡 PESTAÑAS (TABS) - AMARILLO/DORADO PERMANENTE */
+    [data-testid="stTabs"] button,
+    [data-testid="stTabs"] [data-baseweb="tab"],
     [data-testid="stTabs"] button p, 
     [data-testid="stTabs"] button span, 
     [data-testid="stTabs"] button div {
@@ -79,11 +78,23 @@ st.markdown(
         font-size: 1.15em !important;
         font-weight: 800 !important;
     }
-    [data-testid="stTabs"] button[aria-selected="true"] {
-        border-bottom: 3px solid #d4af37 !important;
+    [data-testid="stTabs"] button:hover,
+    [data-testid="stTabs"] button:focus,
+    [data-testid="stTabs"] button:active {
+        color: #ffd700 !important;
     }
-    
-    /* Radio Buttons (Particular, Fonasa) - Textos estrictamente amarillos/dorados */
+    [data-testid="stTabs"] [aria-selected="true"] {
+        border-bottom: 3px solid #d4af37 !important;
+        color: #d4af37 !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+        background-color: #d4af37 !important;
+    }
+    [data-testid="stTabs"] [data-baseweb="tab-border"] {
+        background-color: rgba(212, 175, 55, 0.3) !important;
+    }
+
+    /* 🟡 Radio Buttons (Particular, Fonasa) - AMARILLO/DORADO */
     div[role="radiogroup"] label p, 
     div[role="radiogroup"] label span,
     div[role="radiogroup"] label div {
@@ -91,14 +102,12 @@ st.markdown(
         font-weight: 700 !important;
         font-size: 16px !important;
     }
-    
-    /* Título general del Radio Button (Selecciona la Previsión) en blanco */
     div[data-testid="stRadio"] > label p,
     div[data-testid="stRadio"] > label {
         color: #ffffff !important;
     }
     
-    /* RECUPERADO: Inputs de texto (Barras de búsqueda y login) - Fondo blanco, texto negro perfecto */
+    /* Inputs de texto */
     div[data-baseweb="input"], div[data-baseweb="base-input"] { 
         background-color: #ffffff !important; 
         border-radius: 25px !important; 
@@ -120,7 +129,6 @@ st.markdown(
     .col-val { color: #222222 !important; font-weight: 500; }
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
-    /* Contenedor cotizador */
     .cotizador-box { margin-bottom: 20px; padding-top: 10px; }
     </style>
     """,
@@ -286,7 +294,7 @@ def verificar_es_sin_prep(nombre_test):
     return False
 
 # ==============================================================================
-# 🎨 RENDERIZADOR GRÁFICO DE TARJETAS (DISEÑO TEXTO ORIGINAL)
+# 🎨 RENDERIZADOR GRÁFICO DE TARJETAS
 # ==============================================================================
 def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     
@@ -333,7 +341,6 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
         if any(b in cn for b in ["sinonimo", "sinónimo", "palabra", "item", "tema/examen", "tema / examen"]): continue
         if es_col_nombre(c) and col_nombre_final and c != col_nombre_final: continue
 
-        # REGLA: Oculta categoría y tema, pero JAMÁS Protocolo o Respuesta
         if cn == "categoria" or cn == "tema":
             if not any(p in val_norm for p in palabras): continue
 
@@ -344,10 +351,9 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     contenido_tarjeta = ""
     es_sin_prep_test = False
     
-    # 1. Dibujar el Título Principal
+    # 1. Título Principal
     if col_nombre_final:
         val_str_nombre = str(fila_dict.get(col_nombre_final, "")).strip()
-        
         es_sin_prep_test = verificar_es_sin_prep(val_str_nombre)
 
         if val_str_nombre != "":
@@ -363,7 +369,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
 
     mensaje_prep_impreso = False
 
-    # 2. Renderizar el resto de columnas (Diseño Texto Original)
+    # 2. Columnas
     for col in cols_a_mostrar:
         val = fila_dict[col]
         if str(val).strip() != "":
@@ -374,12 +380,10 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
                 
             contenido_tarjeta += f'<div class="row-item"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
             
-            # INYECCIÓN ESTRATÉGICA: Justo debajo de la columna "AYUNO" (Texto plano, sin botón)
             if es_sin_prep_test and "ayuno" in normalizar(str(col)) and not mensaje_prep_impreso:
                 contenido_tarjeta += f'<div class="row-item"><span class="col-name">Indicaciones Extras:</span> <span class="col-val">Examen sin preparación</span></div>'
                 mensaje_prep_impreso = True
 
-    # SEGURO: Si el examen era "sin preparación" pero NO TENÍA la columna "Ayuno"
     if es_sin_prep_test and not mensaje_prep_impreso:
         has_explicit_prep = any("preparac" in normalizar(str(c)) or "indicac" in normalizar(str(c)) for c in cols_a_mostrar)
         if not has_explicit_prep:
@@ -394,14 +398,12 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
 # ==============================================================================
 if dict_hojas_excel is not None:
     
-    # Se eliminaron los íconos de las pestañas
     tab_buscador, tab_cotizador = st.tabs(["Buscador de Exámenes", "Cotizador Múltiple"])
 
     # ---------------------------------------------------------
-    # 🌟 PESTAÑA 1: BUSCADOR GENERAL (LÓGICA ORIGINAL FLEXIBLE)
+    # 🌟 PESTAÑA 1: BUSCADOR GENERAL
     # ---------------------------------------------------------
     with tab_buscador:
-        # Se dejó el placeholder vacío según la solicitud
         consulta_b = st.text_input("Búsqueda", key="input_busqueda", placeholder="", label_visibility="collapsed")
         
         if consulta_b.strip():
@@ -413,7 +415,6 @@ if dict_hojas_excel is not None:
             def coincide_examen_general(fila):
                 hoja_origen = normalizar(str(fila.get("__hoja_origen__", "")))
 
-                # 1. AISLAMIENTO ESTRICTO DE HORARIOS (Solo si buscas "horario" o "horarios" EXACTAMENTE solos)
                 if normalizar(consulta_b) in ["horario", "horarios", "flujos", "horarios y flujos"]:
                     if "horario" in hoja_origen or "flujo" in hoja_origen:
                         nombre_examen_oculto = ""
@@ -423,7 +424,6 @@ if dict_hojas_excel is not None:
                         return True
                     return False
 
-                # 2. BÚSQUEDA NORMAL FLEXIBLE
                 elementos_validos = []
                 tiene_plata = False
                 tiene_codigo = False
@@ -443,7 +443,6 @@ if dict_hojas_excel is not None:
                 if tiene_plata: columnas_str += " precio precios valor valores arancel copago fonasa particular"
                 if tiene_codigo: columnas_str += " codigo codigos"
                     
-                # INYECTOR PARA "SIN PREPARACIÓN"
                 if verificar_es_sin_prep(nombre_examen_oculto):
                     inyec = " examen examenes sin preparacion no requiere preparacion indicaciones"
                     valores_str += inyec
@@ -451,7 +450,6 @@ if dict_hojas_excel is not None:
 
                 texto_total = valores_str + " " + columnas_str
                 
-                # Para que funcione "calprotectina codigo" o "calprotectina horario"
                 if not all(term in texto_total for term in palabras):
                     return False
                     
@@ -474,7 +472,6 @@ if dict_hojas_excel is not None:
                 df_resultados = df_resultados.sort_values('__puntaje__')
                 resultados_mostrar = df_resultados.head(150)
 
-                # --- AGRUPAR EXÁMENES ---
                 examenes_agrupados = {}
                 for _, fila in resultados_mostrar.iterrows():
                     f_dict = fila.to_dict()
@@ -536,10 +533,8 @@ if dict_hojas_excel is not None:
     # 🧮 PESTAÑA 2: COTIZADOR MÚLTIPLE
     # ---------------------------------------------------------
     with tab_cotizador:
-        st.write("") # Espacio para separar la barra superior
+        st.write("") 
         tipo_pago = st.radio("Selecciona la Previsión:", ["Particular", "Fonasa"], horizontal=True)
-        
-        # Etiqueta colapsada y placeholder vacío según la solicitud, y sin el título en texto normal
         consulta_c = st.text_input("Cotizador", key="input_cotizador", placeholder="", label_visibility="collapsed")
         
         if consulta_c.strip():
