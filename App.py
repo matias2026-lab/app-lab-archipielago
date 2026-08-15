@@ -231,17 +231,15 @@ def requiere_no_preparacion(nombre_test):
 def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     
     # --- PUENTE INTELIGENTE PARA MOSTRAR HORARIOS ---
-    # Asegura que al buscar "horarios", la app atrape "Horario Lunes", "Horario Sábado", "Condiciones"
     palabras_f = palabras_filtro.copy()
     if "horario" in palabras_f or "horarios" in palabras_f:
         palabras_f.extend(["horario", "horarios", "condicion", "condiciones", "lunes", "sabado", "viernes"])
 
     # 1. Identificar Nombre
-    # Solo miramos columnas que realmente tengan un valor en esta fila
     posibles_nombres = [c for c in fila_dict.keys() if es_col_nombre(c) and c not in ["__hoja_origen__", "__puntaje__"] and str(fila_dict[c]).strip() != "" and "sinonimo" not in normalizar(str(c))]
     col_nombre_final = None
     
-    # Jerarquía: Primero Archipiélago, luego Nombre/Prestación, luego Examen genérico/Unnamed
+    # Jerarquía
     for c in posibles_nombres:
         if "archipielago" in normalizar(str(c)): col_nombre_final = c; break
     if not col_nombre_final:
@@ -250,8 +248,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     if not col_nombre_final and posibles_nombres: 
         col_nombre_final = posibles_nombres[0]
 
-    # 🚀 FALLBACK SUPREMO: Si el usuario dejó la celda del título en blanco en el Excel (Ej: Hoja Horarios)
-    # Tomamos obligatoriamente la PRIMERA columna que tenga contenido como título principal
+    # 🚀 FALLBACK SUPREMO (Ej: Hoja Horarios)
     if not col_nombre_final:
         for c in fila_dict.keys():
             if c not in ["__hoja_origen__", "__puntaje__"] and str(fila_dict[c]).strip() != "":
@@ -260,7 +257,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
 
     cols_esenciales = [col_nombre_final] if col_nombre_final else []
 
-    # 2. Lógica Láser (Búsquedas Específicas)
+    # 2. Lógica Láser
     has_fonasa = "fonasa" in palabras
     has_particular = "particular" in palabras
     has_precio = any(w in palabras for w in ["precio", "precios", "valor", "valores", "arancel", "copago"])
@@ -298,11 +295,12 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
         # Destruir columnas basura 
         if any(b in cn for b in ["sinonimo", "sinónimo", "palabra", "item", "tema/examen", "tema / examen"]): continue
         
-        # Destruir nombres duplicados, conservar solo el oficial (col_nombre_final)
+        # Destruir nombres duplicados
         if es_col_nombre(c) and col_nombre_final and c != col_nombre_final: continue
 
-        # REGLA AZUL: Ocultar Categorías o Temas a menos que la búsqueda coincida con su contenido
-        if any(m in cn for m in ["categoria", "tema", "protocolo"]):
+        # REGLA AZUL: Ocultar SOLO Categoría y Tema a menos que la búsqueda coincida con su contenido
+        # NOTA: Protocolo / Respuesta SE MUESTRA NORMALMENTE.
+        if any(m in cn for m in ["categoria", "tema"]):
             if not any(p in val_norm for p in palabras):
                 continue
 
@@ -310,7 +308,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
 
     cols_a_mostrar = cols_filtradas
 
-    # 4. DIBUJAR HTML (REGLA: NOMBRE SIEMPRE EN LA LÍNEA 1 ARRIBA Y DESTACADO)
+    # 4. DIBUJAR HTML (NOMBRE SIEMPRE EN LA LÍNEA 1 ARRIBA Y DESTACADO)
     contenido_tarjeta = ""
     
     if col_nombre_final:
@@ -318,20 +316,18 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
         if val_str_nombre != "":
             cn_final = normalizar(str(col_nombre_final)).strip()
             
-            # 🚀 MAGIA DEL FALLBACK: Si el nombre de la columna es raro (Unnamed) o un título sin sentido como 'tema'
-            # NO escribimos esa etiqueta. Mostramos SU VALOR como el gran título principal de la tarjeta.
+            # MAGIA DEL FALLBACK
             es_titulo_limpio = (cn_final == "" or "unnamed" in cn_final or "tema" in cn_final or "examen" == cn_final or col_nombre_final not in posibles_nombres)
             
             if es_titulo_limpio:
                 contenido_tarjeta += f'<div class="row-item" style="margin-bottom: 12px; border-bottom: 2px solid #d4af37; padding-bottom: 8px;"><span class="col-val" style="font-size: 1.15em; font-weight: 800; color: #1a1a1a; text-transform: uppercase;">{val_str_nombre}</span></div>'
             else:
-                # Comportamiento normal (Ej: PRESTACIONES ARCHIPIELAGO: Nombre del examen)
                 contenido_tarjeta += f'<div class="row-item" style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;"><span class="col-name" style="font-size: 1.05em; color: #6a1b29;">{col_nombre_final}:</span> <span class="col-val" style="font-size: 1.05em; font-weight: 800; color: #1a1a1a;">{val_str_nombre}</span></div>'
             
         if col_nombre_final in cols_a_mostrar:
             cols_a_mostrar.remove(col_nombre_final)
 
-    # 💉 INYECTAR AUTOMÁTICAMENTE "NO REQUIERE PREPARACIÓN" SI CORRESPONDE
+    # 💉 INYECTAR "NO REQUIERE PREPARACIÓN"
     if col_nombre_final:
         val_nombre = str(fila_dict.get(col_nombre_final, ""))
         if requiere_no_preparacion(val_nombre):
@@ -339,7 +335,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
             if not has_explicit_prep:
                 contenido_tarjeta += '<div class="row-item"><span class="col-name">Indicaciones:</span> <span class="col-val" style="color: #2e7d32; font-weight: 700;">No requiere preparación</span></div>'
 
-    # Renderizar el resto de columnas (ej. Horarios y Condiciones)
+    # Renderizar el resto de columnas
     for col in cols_a_mostrar:
         val = fila_dict[col]
         if str(val).strip() != "":
@@ -441,7 +437,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                 if "horario" in hoja_origen or "flujo" in hoja_origen:
                     nombre_examen_oculto = ""
                     
-                    # Usar el Fallback también aquí para poder identificar el nombre (Ej: Cortisol)
                     col_n_local = None
                     for c in fila.keys():
                         if es_col_nombre(c) and c not in ["__hoja_origen__", "__puntaje__"] and str(fila[c]).strip() != "": col_n_local = c; break
@@ -512,7 +507,6 @@ if consulta.strip() and dict_hojas_excel is not None:
             df_resultados['__puntaje__'] = df_resultados.apply(calcular_puntaje_general, axis=1)
             df_resultados = df_resultados.sort_values('__puntaje__')
             
-            # Se aumentó a 150 para que, al buscar "horarios", despliegue la lista completa
             resultados_mostrar = df_resultados.head(150)
 
             # --- AGRUPAR EXÁMENES POR NOMBRE PARA DETECTAR COLISIONES ---
@@ -538,7 +532,7 @@ if consulta.strip() and dict_hojas_excel is not None:
             
             grupos_ordenados = sorted(examenes_agrupados.values(), key=lambda x: x['puntaje'])
             
-            # --- EVALUAR CADA EXAMEN (¿Se fusiona o se muestra individual?) ---
+            # --- EVALUAR CADA EXAMEN ---
             for grupo in grupos_ordenados:
                 lista_filas = grupo['filas']
                 
@@ -587,6 +581,6 @@ if consulta.strip() and dict_hojas_excel is not None:
                     renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
 
                 else:
-                    # 🧠 COMPORTAMIENTO INDIVIDUAL 
+                    # 🧠 COMPORTAMIENTO INDIVIDUAL
                     for f in lista_filas:
                         renderizar_tarjeta(f, palabras, palabras_filtro)
