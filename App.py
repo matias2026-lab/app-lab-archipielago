@@ -202,30 +202,25 @@ def es_col_muestra(c): return "tipo" in normalizar(str(c)) or "muestra" in norma
 def es_col_incluye(c): return "incluye" in normalizar(str(c))
 def es_col_codigo(c): return "codigo" in normalizar(str(c)) or "bklab" in normalizar(str(c)) or "proactive" in normalizar(str(c))
 def es_col_nombre(c):
-    cn = normalizar(str(c))
-    return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or cn == "examen"
+    cn = normalizar(str(c)).strip()
+    return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or cn == "examen" or "unnamed" in cn
 
 # DETECTOR AMPLIADO DE EXÁMENES QUE NO REQUIEREN PREPARACIÓN
 def requiere_no_preparacion(nombre_test):
     norm = normalizar(nombre_test)
     palabras_test = set(re.findall(r'\b\w+\b', norm))
     
-    # Siglas / palabras cortas exactas o subpalabras explícitas
-    siglas_exactas = ["tp", "tt", "ttpa", "ttpk", "pcr", "gen", "fr", "f.r"]
-    for sigla in siglas_exactas:
-        if sigla in palabras_test or sigla in norm:
-            return True
+    # Siglas exactas
+    siglas = ["tp", "tt", "ttpa", "ttpk", "pcr", "gen", "fr"]
+    if any(s in palabras_test for s in siglas) or "f.r" in norm: return True
             
-    # Nombres o términos descriptivos ampliados (Biología Molecular, Coagulación, etc)
+    # Frases o términos compuestos
     frases = [
         "factor reumatoide", "grupo sanguineo", "grupo y rh", "coombs",
         "subunidad beta", "beta hcg", "test rapido", "biologia molecular",
         "mutacion", "hemograma", "coagulacion", "fibrinogeno", "creatinina"
     ]
-    for frase in frases:
-        if frase in norm:
-            return True
-            
+    if any(f in norm for f in frases): return True
     return False
 
 # ==============================================================================
@@ -235,12 +230,16 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     # 1. Identificar Nombre
     posibles_nombres = [c for c in fila_dict.keys() if es_col_nombre(c) and c != "__hoja_origen__" and "sinonimo" not in normalizar(str(c))]
     col_nombre_final = None
+    
+    # Jerarquía: Primero Archipiélago, luego Nombre/Prestación, luego Examen genérico
     for c in posibles_nombres:
         if "archipielago" in normalizar(str(c)): col_nombre_final = c; break
     if not col_nombre_final:
         for c in posibles_nombres:
             if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)): col_nombre_final = c; break
     if not col_nombre_final and posibles_nombres: col_nombre_final = posibles_nombres[0]
+
+    cols_esenciales = [col_nombre_final] if col_nombre_final else []
 
     # 2. Lógica Láser (Búsquedas Específicas)
     has_fonasa = "fonasa" in palabras
@@ -266,42 +265,46 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
                 cols_especificas.append(c)
 
     if cols_especificas or has_fonasa or has_particular or has_precio:
-        cols_a_mostrar = list(dict.fromkeys(([col_nombre_final] if col_nombre_final else []) + cols_especificas))
+        cols_a_mostrar = list(dict.fromkeys(cols_esenciales + cols_especificas))
     else:
         cols_a_mostrar = list(fila_dict.keys())
 
     # 3. FILTRO BASURA, DUPLICADOS Y CATEGORÍAS
-    columnas_basura = ["sinonimo", "sinónimo", "palabra", "item"]
-    columnas_categoria_meta = ["categoria", "tema", "protocolo", "respuesta"]
-
     cols_filtradas = []
     for c in cols_a_mostrar:
         if c == "__hoja_origen__" or c == "__puntaje__": continue
         cn = normalizar(str(c))
         val_norm = normalizar(str(fila_dict[c]))
 
-        # Destruir columnas basura
-        if any(b in cn for b in columnas_basura): continue
+        # Destruir columnas basura 
+        if any(b in cn for b in ["sinonimo", "sinónimo", "palabra", "item", "tema/examen", "tema / examen"]): continue
         
-        # Destruir nombres duplicados, conservar solo col_nombre_final
+        # Destruir nombres duplicados, conservar solo el oficial (col_nombre_final)
         if es_col_nombre(c) and col_nombre_final and c != col_nombre_final: continue
 
-        # REGLA AZUL: Ocultar Categorías o Temas a menos que el usuario busque un término adentro
-        if any(m in cn for m in columnas_categoria_meta):
-            if not any(p in cn or p in val_norm for p in palabras_filtro):
+        # REGLA AZUL: Ocultar Categorías o Temas a menos que la búsqueda coincida con su contenido
+        if any(m in cn for m in ["categoria", "tema"]):
+            if not any(p in val_norm for p in palabras):
                 continue
 
         cols_filtradas.append(c)
 
     cols_a_mostrar = cols_filtradas
 
-    # 4. DIBUJAR HTML (REGLA: NOMBRE SIEMPRE EN LA LÍNEA 1 ARRIBA)
+    # 4. DIBUJAR HTML (REGLA: NOMBRE SIEMPRE EN LA LÍNEA 1 ARRIBA Y DESTACADO)
     contenido_tarjeta = ""
     
     if col_nombre_final:
         val_str_nombre = str(fila_dict.get(col_nombre_final, "")).strip()
         if val_str_nombre != "":
-            contenido_tarjeta += f'<div class="row-item"><span class="col-name" style="font-size: 1.05em; color: #6a1b29;">{col_nombre_final}:</span> <span class="col-val" style="font-size: 1.05em; font-weight: bold;">{val_str_nombre}</span></div>'
+            # Filtro estético para transformar "Unnamed: 0" en una palabra limpia, o anular la etiqueta
+            if "unnamed" in normalizar(str(col_nombre_final)):
+                # Si es Unnamed, NO dibuja la etiqueta, solo dibuja el valor como un Título Grande
+                contenido_tarjeta += f'<div class="row-item" style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;"><span class="col-val" style="font-size: 1.15em; font-weight: 800; color: #6a1b29; text-transform: uppercase;">{val_str_nombre}</span></div>'
+            else:
+                # Comportamiento normal
+                contenido_tarjeta += f'<div class="row-item" style="margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;"><span class="col-name" style="font-size: 1.05em; color: #6a1b29;">{col_nombre_final}:</span> <span class="col-val" style="font-size: 1.05em; font-weight: 800; color: #1a1a1a;">{val_str_nombre}</span></div>'
+            
         if col_nombre_final in cols_a_mostrar:
             cols_a_mostrar.remove(col_nombre_final)
 
@@ -311,7 +314,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
         if requiere_no_preparacion(val_nombre):
             has_explicit_prep = any("preparac" in normalizar(str(c)) or "indicac" in normalizar(str(c)) for c in cols_a_mostrar)
             if not has_explicit_prep:
-                contenido_tarjeta += '<div class="row-item"><span class="col-name">Indicaciones:</span> <span class="col-val" style="color: #2e7d32; font-weight: 600;">No requiere preparacion</span></div>'
+                contenido_tarjeta += '<div class="row-item"><span class="col-name">Indicaciones:</span> <span class="col-val" style="color: #2e7d32; font-weight: 700;">No requiere preparación</span></div>'
 
     # Renderizar el resto de columnas
     for col in cols_a_mostrar:
@@ -321,6 +324,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
                 val_str = formatear_pesos(extraer_monto_limpio(val))
             else:
                 val_str = str(val)
+            # Fondo blanco limpio, cero amarillos
             contenido_tarjeta += f'<div class="row-item"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
 
     if contenido_tarjeta.strip() != "":
@@ -399,7 +403,7 @@ if consulta.strip() and dict_hojas_excel is not None:
         st.markdown('</div>', unsafe_allow_html=True)
         
     # ---------------------------------------------------------
-    # 🌟 MODO 2: BÚSQUEDA GENERAL ORQUESTADA
+    # 🌟 MODO 2: BÚSQUEDA GENERAL ORQUESTADA (CON INYECTOR DE PREPARACIÓN)
     # ---------------------------------------------------------
     else:
         palabras = [p for p in normalizar(query_clean).split() if p]
@@ -411,6 +415,7 @@ if consulta.strip() and dict_hojas_excel is not None:
             elementos_validos = []
             tiene_plata = False
             tiene_codigo = False
+            nombre_examen_oculto = ""
             
             for c, v in fila.items():
                 if str(v).strip() != "" and c != "__hoja_origen__":
@@ -418,12 +423,31 @@ if consulta.strip() and dict_hojas_excel is not None:
                     elementos_validos.append(str(v))
                     if es_col_precio(c): tiene_plata = True
                     if es_col_codigo(c): tiene_codigo = True
+                    if es_col_nombre(c): nombre_examen_oculto += " " + str(v)
             
-            texto_fila = normalizar(" ".join(elementos_validos))
-            if tiene_plata: texto_fila += " precio precios valor valores arancel copago fonasa particular"
-            if tiene_codigo: texto_fila += " codigo codigos"
+            valores_str = " ".join([normalizar(str(v)) for c, v in fila.items() if str(v).strip() != "" and c != "__hoja_origen__"])
+            columnas_str = " ".join([normalizar(str(c)) for c, v in fila.items() if str(v).strip() != "" and c != "__hoja_origen__"])
+            
+            # Inyección de sinónimos para el buscador
+            if tiene_plata: columnas_str += " precio precios valor valores arancel copago fonasa particular"
+            if tiene_codigo: columnas_str += " codigo codigos"
                 
-            return all(term in texto_fila for term in palabras)
+            # INYECCIÓN MÁGICA: Hacer buscables los exámenes sin preparación
+            if requiere_no_preparacion(nombre_examen_oculto):
+                valores_str += " examenes sin preparacion no requiere preparacion indicaciones"
+
+            texto_total = valores_str + " " + columnas_str
+            
+            # Regla 1: Todo lo buscado debe coincidir
+            if not all(term in texto_total for term in palabras):
+                return False
+                
+            # Regla 2 Anti-Ruido: Al menos UNA palabra debe hacer match con la información real de la celda.
+            # Así evitamos que buscar "horario" despliegue toda la base de datos sin sentido.
+            if not any(term in valores_str for term in palabras):
+                return False
+                
+            return True
 
         df_resultados = df_todas_las_hojas[df_todas_las_hojas.apply(coincide_examen_general, axis=1)]
 
@@ -482,9 +506,12 @@ if consulta.strip() and dict_hojas_excel is not None:
                         if es_col_nombre(c) or es_col_precio(c) or es_col_tiempo(c) or es_col_contenedor(c) or es_col_muestra(c) or es_col_incluye(c): continue
                         fila_consolidada[c] = v
 
-                    # 2. Imponer Reglas de Maestro Ginecológico
+                    # 2. Imponer Reglas de Maestro Ginecológico (Elimina nombres antiguos y pone el suyo)
                     nombres_gine = [c for c in fila_gine.keys() if es_col_nombre(c) and c != "__hoja_origen__"]
-                    if nombres_gine: fila_consolidada[nombres_gine[0]] = fila_gine[nombres_gine[0]] # Impone su nombre
+                    if nombres_gine:
+                        nombres_viejos = [c for c in fila_consolidada.keys() if es_col_nombre(c)]
+                        for nv in nombres_viejos: del fila_consolidada[nv]
+                        fila_consolidada[nombres_gine[0]] = fila_gine[nombres_gine[0]] 
                     
                     for c, v in fila_gine.items():
                         if c == "__hoja_origen__" or str(v).strip() == "": continue
@@ -497,15 +524,15 @@ if consulta.strip() and dict_hojas_excel is not None:
                             if str(v).strip() != "" and es_col_codigo(c) and c != "__hoja_origen__":
                                 fila_consolidada[c] = v
 
-                    # 4. WhatsApp y Otras hojas
+                    # 4. WhatsApp y Otras hojas (Evitando duplicar nombres)
                     for f in filas_otras:
                         for c, v in f.items():
-                            if c == "__hoja_origen__" or str(v).strip() == "": continue
-                            if not es_col_nombre(c): fila_consolidada[c] = v
+                            if c == "__hoja_origen__" or str(v).strip() == "" or es_col_nombre(c): continue
+                            fila_consolidada[c] = v
 
                     renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
 
                 else:
-                    # 🧠 COMPORTAMIENTO NORMAL: Mostrar cada tarjeta individualmente (Ej: Hemograma)
+                    # 🧠 COMPORTAMIENTO INDIVIDUAL (Ej: Hemograma o Entregas de Resultados)
                     for f in lista_filas:
                         renderizar_tarjeta(f, palabras, palabras_filtro)
