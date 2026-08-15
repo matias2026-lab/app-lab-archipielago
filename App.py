@@ -42,7 +42,7 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PURIFICADOS (V2.0)
+# 🎨 ESTILOS CSS PURIFICADOS (DISEÑO ORIGINAL RESTAURADO)
 # ==============================================================================
 st.markdown(
     """
@@ -64,6 +64,7 @@ st.markdown(
     }
     div[data-testid="stButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
+    /* Pestañas (Tabs) */
     [data-testid="stTabs"] button { color: #ffffff !important; font-size: 1.1em !important; font-weight: 700 !important; }
     [data-testid="stTabs"] button[aria-selected="true"] { color: #d4af37 !important; border-bottom: 3px solid #d4af37 !important; }
     
@@ -71,19 +72,17 @@ st.markdown(
     div[data-baseweb="input"] input { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-size: 16px !important; padding: 12px 18px !important; }
     
     .card-box { background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 25px; border-radius: 12px; border-left: 8px solid #d4af37; margin-bottom: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); }
-    .row-item { margin-bottom: 12px; font-size: 15px; color: #1a1a1a !important; padding: 4px 6px;}
+    .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; border-radius: 6px; padding: 4px 6px;}
     .col-name { font-weight: 700; color: #6a1b29 !important; }
     .col-val { color: #222222 !important; font-weight: 500; }
     .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
     
-    .badge-green { background-color: #2e7d32; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 0.9em; font-weight: bold; display: inline-block; }
-    .badge-red { background-color: #c62828; color: #ffffff; padding: 4px 10px; border-radius: 12px; font-size: 0.9em; font-weight: bold; display: inline-block;}
+    .cotizador-box { margin-bottom: 20px; padding-top: 10px; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-# ----------------- FUNCIÓN RECUPERADA PARA CARGAR EL LOGO -----------------
 def obtener_img_base64(ruta_imagen):
   with open(ruta_imagen, "rb") as f:
     return base64.b64encode(f.read()).decode()
@@ -146,7 +145,7 @@ def es_col_nombre(c):
     return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or "examen" in cn or "unnamed" in cn
 
 # ==============================================================================
-# 🚀 MOTOR V2.0: PRE-INDEXACIÓN EN CACHÉ Y LECTURA DE DICCIONARIO
+# 📂 CARGA DE DATOS MULTI-HOJA Y DICCIONARIO
 # ==============================================================================
 ARCHIVO_EXCEL = "APP lab archipielago 2.xlsx"
 
@@ -180,49 +179,6 @@ def cargar_hojas_y_diccionario(ruta_archivo):
         for nombre_hoja, df in dict_hojas.items():
             df_clean = df.dropna(how="all").rename(columns=lambda c: str(c).strip()).fillna("")
             df_clean['__hoja_origen__'] = nombre_hoja.strip() 
-            
-            indices_busqueda = []
-            valores_reales = []
-            
-            for _, fila in df_clean.iterrows():
-                val_str = ""
-                col_str = ""
-                nombre_oculto = ""
-                tiene_plata = False
-                tiene_codigo = False
-                
-                for c, v in fila.items():
-                    if str(v).strip() != "" and c != "__hoja_origen__":
-                        v_norm = normalizar(str(v))
-                        c_norm = normalizar(str(c))
-                        val_str += " " + v_norm
-                        col_str += " " + c_norm
-                        
-                        if es_col_precio(c): tiene_plata = True
-                        if es_col_codigo(c): tiene_codigo = True
-                        if es_col_nombre(c): nombre_oculto += " " + v_norm
-                        
-                if tiene_plata: col_str += " precio precios valor valores arancel copago fonasa particular"
-                if tiene_codigo: col_str += " codigo codigos"
-                
-                val_para_filtro = val_str
-                
-                es_sin_prep = False
-                for term in diccionario["sin_preparacion"]:
-                    if len(term) <= 4:
-                        if re.search(rf'\b{term}\b', nombre_oculto): es_sin_prep = True; break
-                    else:
-                        if term in nombre_oculto: es_sin_prep = True; break
-                        
-                if es_sin_prep:
-                    inyec = " examen examenes sin preparacion no requiere preparacion indicaciones horario horarios"
-                    val_str += inyec; col_str += inyec; val_para_filtro += inyec
-                    
-                indices_busqueda.append(val_str + " " + col_str)
-                valores_reales.append(val_para_filtro)
-                
-            df_clean['__index_busqueda__'] = indices_busqueda
-            df_clean['__valores_reales__'] = valores_reales
             dict_limpio[nombre_hoja.strip()] = df_clean
             
         return dict_limpio, diccionario
@@ -257,7 +213,7 @@ def obtener_precio(fila, tipo_pago):
     return 0
 
 def obtener_mejor_col_nombre(f_dict):
-    posibles = [c for c in f_dict.keys() if es_col_nombre(c) and not c.startswith("__") and str(f_dict[c]).strip() != "" and "sinonimo" not in normalizar(str(c))]
+    posibles = [c for c in f_dict.keys() if es_col_nombre(c) and c != "__hoja_origen__" and str(f_dict[c]).strip() != "" and "sinonimo" not in normalizar(str(c))]
     for c in posibles:
         if "archipielago" in normalizar(str(c)): return c, True
     for c in posibles:
@@ -265,7 +221,7 @@ def obtener_mejor_col_nombre(f_dict):
     if posibles: return posibles[0], True
     
     for c in f_dict.keys():
-        if not c.startswith("__") and str(f_dict[c]).strip() != "": return c, False
+        if c != "__hoja_origen__" and str(f_dict[c]).strip() != "": return c, False
     return None, False
 
 def normalizar_nombre_agrupacion(nombre):
@@ -286,7 +242,7 @@ def verificar_es_sin_prep(nombre_test):
     return False
 
 # ==============================================================================
-# 🎨 RENDERIZADOR GRÁFICO DE TARJETAS
+# 🎨 RENDERIZADOR GRÁFICO DE TARJETAS (DISEÑO ORIGINAL RESTAURADO)
 # ==============================================================================
 def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     
@@ -316,24 +272,25 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
             elif any(p in normalizar(str(c)) for p in palabras_f if p not in ["fonasa", "particular", "precio", "valor", "arancel", "copago"]): cols_especificas.append(c)
     else:
         for c in fila_dict.keys():
-            if not c.startswith("__") and any(term in normalizar(str(c)) for term in palabras_f):
+            if any(term in normalizar(str(c)) for term in palabras_f):
                 cols_especificas.append(c)
 
     if cols_especificas or has_fonasa or has_particular or has_precio:
         cols_a_mostrar = list(dict.fromkeys(([col_nombre_final] if col_nombre_final else []) + cols_especificas))
     else:
-        cols_a_mostrar = [c for c in fila_dict.keys() if not c.startswith("__")]
+        cols_a_mostrar = [c for c in fila_dict.keys() if c != "__hoja_origen__" and c != "__puntaje__"]
 
     cols_filtradas = []
     for c in cols_a_mostrar:
-        if c.startswith("__"): continue
+        if c == "__hoja_origen__" or c == "__puntaje__": continue
         cn = normalizar(str(c))
         val_norm = normalizar(str(fila_dict[c]))
 
         if any(b in cn for b in ["sinonimo", "sinónimo", "palabra", "item", "tema/examen", "tema / examen"]): continue
         if es_col_nombre(c) and col_nombre_final and c != col_nombre_final: continue
 
-        if any(m in cn for m in ["categoria", "tema", "protocolo"]):
+        # REGLA: Oculta categoría y tema, pero JAMÁS Protocolo o Respuesta
+        if cn == "categoria" or cn == "tema":
             if not any(p in val_norm for p in palabras): continue
 
         cols_filtradas.append(c)
@@ -347,7 +304,6 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     if col_nombre_final:
         val_str_nombre = str(fila_dict.get(col_nombre_final, "")).strip()
         
-        # Verificar si este examen está en el diccionario de Sin Preparación
         es_sin_prep_test = verificar_es_sin_prep(val_str_nombre)
 
         if val_str_nombre != "":
@@ -361,10 +317,9 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
             
         if col_nombre_final in cols_a_mostrar: cols_a_mostrar.remove(col_nombre_final)
 
-    # Variables para controlar la inyección de "Examen sin preparación"
     mensaje_prep_impreso = False
 
-    # 2. Renderizar el resto de columnas
+    # 2. Renderizar el resto de columnas (Diseño Texto Original)
     for col in cols_a_mostrar:
         val = fila_dict[col]
         if str(val).strip() != "":
@@ -373,38 +328,32 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
             else:
                 val_str = str(val)
                 
-            # Formateo visual especial para Ayuno
-            if "ayuno" in normalizar(str(col)):
-                if any(k in normalizar(val_str) for k in ["no aplica", "sin ayuno", "no requiere"]):
-                    val_str = f'<span class="badge-green">✅ {val_str}</span>'
-                else:
-                    val_str = f'<span class="badge-red">🩸 {val_str}</span>'
-                
-            # Dibujar la columna normal
             contenido_tarjeta += f'<div class="row-item"><span class="col-name">{col}:</span> <span class="col-val">{val_str}</span></div>'
             
-            # INYECCIÓN ESTRATÉGICA: Justo debajo de la columna "AYUNO", si corresponde
+            # INYECCIÓN ESTRATÉGICA: Justo debajo de la columna "AYUNO" (Texto plano, sin botón)
             if es_sin_prep_test and "ayuno" in normalizar(str(col)) and not mensaje_prep_impreso:
-                contenido_tarjeta += f'<div class="row-item"><span class="col-name" style="color: #2e7d32;">Indicaciones Extras:</span> <span class="col-val" style="color: #2e7d32; font-weight: 700;">Examen sin preparación</span></div>'
+                contenido_tarjeta += f'<div class="row-item"><span class="col-name">Indicaciones Extras:</span> <span class="col-val">Examen sin preparación</span></div>'
                 mensaje_prep_impreso = True
 
-    # SEGURO: Si el examen era "sin preparación" pero NO TENÍA la columna "Ayuno", inyectamos el mensaje al final
+    # SEGURO: Si el examen era "sin preparación" pero NO TENÍA la columna "Ayuno"
     if es_sin_prep_test and not mensaje_prep_impreso:
-        contenido_tarjeta += f'<div class="row-item"><span class="col-name" style="color: #2e7d32;">Indicaciones Extras:</span> <span class="col-val" style="color: #2e7d32; font-weight: 700;">Examen sin preparación</span></div>'
+        has_explicit_prep = any("preparac" in normalizar(str(c)) or "indicac" in normalizar(str(c)) for c in cols_a_mostrar)
+        if not has_explicit_prep:
+            contenido_tarjeta += f'<div class="row-item"><span class="col-name">Indicaciones Extras:</span> <span class="col-val">Examen sin preparación</span></div>'
 
     if contenido_tarjeta.strip() != "":
         st.markdown(f'<div class="card-box">{contenido_tarjeta}</div>', unsafe_allow_html=True)
 
 
 # ==============================================================================
-# 🗂️ SISTEMA DE PESTAÑAS (TABS V2.0)
+# 🗂️ SISTEMA DE PESTAÑAS (TABS)
 # ==============================================================================
 if dict_hojas_excel is not None:
     
     tab_buscador, tab_cotizador = st.tabs(["🔍 Buscador de Exámenes", "🧮 Cotizador Múltiple"])
 
     # ---------------------------------------------------------
-    # 🌟 PESTAÑA 1: BUSCADOR GENERAL (ULTRARRÁPIDO)
+    # 🌟 PESTAÑA 1: BUSCADOR GENERAL (LÓGICA ORIGINAL FLEXIBLE)
     # ---------------------------------------------------------
     with tab_buscador:
         consulta_b = st.text_input("Ingresa el examen o dato que buscas:", key="input_busqueda", placeholder="Ej: Calprotectina horario...")
@@ -415,32 +364,61 @@ if dict_hojas_excel is not None:
             
             df_todas_las_hojas = pd.concat(list(dict_hojas_excel.values()), ignore_index=True).fillna("")
 
-            # Motor V2.0 usando el Índice en RAM
-            def coincide_examen_general_v2(fila):
+            def coincide_examen_general(fila):
                 hoja_origen = normalizar(str(fila.get("__hoja_origen__", "")))
-                index_total = str(fila.get("__index_busqueda__", ""))
-                valores_filtro = str(fila.get("__valores_reales__", ""))
 
+                # 1. AISLAMIENTO ESTRICTO DE HORARIOS (Solo si buscas "horario" o "horarios" EXACTAMENTE solos)
                 if normalizar(consulta_b) in ["horario", "horarios", "flujos", "horarios y flujos"]:
                     if "horario" in hoja_origen or "flujo" in hoja_origen:
+                        nombre_examen_oculto = ""
                         col_n_local, _ = obtener_mejor_col_nombre(fila.to_dict())
-                        nombre_examen = str(fila.get(col_n_local, "")).lower() if col_n_local else ""
-                        if "cortisol" in nombre_examen: return False
+                        if col_n_local: nombre_examen_oculto = str(fila.get(col_n_local, "")).lower()
+                        if "cortisol" in nombre_examen_oculto: return False
                         return True
                     return False
 
-                if not all(term in index_total for term in palabras): return False
-                if not any(term in valores_filtro for term in palabras): return False
+                # 2. BÚSQUEDA NORMAL FLEXIBLE
+                elementos_validos = []
+                tiene_plata = False
+                tiene_codigo = False
+                nombre_examen_oculto = ""
+                
+                for c, v in fila.items():
+                    if str(v).strip() != "" and c != "__hoja_origen__":
+                        elementos_validos.append(str(c))
+                        elementos_validos.append(str(v))
+                        if es_col_precio(c): tiene_plata = True
+                        if es_col_codigo(c): tiene_codigo = True
+                        if es_col_nombre(c): nombre_examen_oculto += " " + str(v)
+                
+                valores_str = " ".join([normalizar(str(v)) for c, v in fila.items() if str(v).strip() != "" and c != "__hoja_origen__"])
+                columnas_str = " ".join([normalizar(str(c)) for c, v in fila.items() if str(v).strip() != "" and c != "__hoja_origen__"])
+                
+                if tiene_plata: columnas_str += " precio precios valor valores arancel copago fonasa particular"
+                if tiene_codigo: columnas_str += " codigo codigos"
+                    
+                # INYECTOR PARA "SIN PREPARACIÓN"
+                if verificar_es_sin_prep(nombre_examen_oculto):
+                    inyec = " examen examenes sin preparacion no requiere preparacion indicaciones"
+                    valores_str += inyec
+                    columnas_str += inyec
+
+                texto_total = valores_str + " " + columnas_str
+                
+                # Para que funcione "calprotectina codigo" o "calprotectina horario"
+                if not all(term in texto_total for term in palabras):
+                    return False
+                    
                 return True
 
-            df_resultados = df_todas_las_hojas[df_todas_las_hojas.apply(coincide_examen_general_v2, axis=1)]
+            df_resultados = df_todas_las_hojas[df_todas_las_hojas.apply(coincide_examen_general, axis=1)]
 
             if df_resultados.empty:
                 st.warning(f"⚠️ No se encontró información para **'{consulta_b}'**.")
             else:
                 def calcular_puntaje_general(fila):
                     puntaje = 10000
-                    valores_validos = [normalizar(str(v)).strip() for c, v in fila.items() if not str(c).startswith("__") and str(v).strip() != ""]
+                    valores_validos = [normalizar(str(v)).strip() for c, v in fila.items() if c != "__hoja_origen__" and str(v).strip() != ""]
                     for p in palabras:
                         if any(p == v for v in valores_validos): puntaje -= 5000
                         else: puntaje -= 500
@@ -477,7 +455,7 @@ if dict_hojas_excel is not None:
                         fila_consolidada = {}
 
                         for c, v in fila_prest.items():
-                            if c.startswith("__") or str(v).strip() == "": continue
+                            if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
                             if es_col_nombre(c) or es_col_precio(c) or es_col_tiempo(c) or es_col_contenedor(c) or es_col_muestra(c) or es_col_incluye(c): continue
                             fila_consolidada[c] = v
 
@@ -488,18 +466,18 @@ if dict_hojas_excel is not None:
                             fila_consolidada[col_n_gine] = fila_gine[col_n_gine] 
                         
                         for c, v in fila_gine.items():
-                            if c.startswith("__") or str(v).strip() == "": continue
+                            if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
                             if es_col_precio(c) or es_col_tiempo(c) or es_col_contenedor(c) or es_col_muestra(c) or es_col_incluye(c):
                                 fila_consolidada[c] = v
                                 
                         if fila_barnafi:
                             for c, v in fila_barnafi.items():
-                                if str(v).strip() != "" and es_col_codigo(c) and not c.startswith("__"):
+                                if str(v).strip() != "" and es_col_codigo(c) and c != "__hoja_origen__" and c != "__puntaje__":
                                     fila_consolidada[c] = v
 
                         for f in filas_otras:
                             for c, v in f.items():
-                                if c.startswith("__") or str(v).strip() == "" or es_col_nombre(c): continue
+                                if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col_nombre(c): continue
                                 fila_consolidada[c] = v
 
                         renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
@@ -531,7 +509,7 @@ if dict_hojas_excel is not None:
             for nombre in nombres_examenes:
                 palabras = [p for p in normalizar(nombre).split() if p]
                 def coincide_examen_suma(fila):
-                    texto_fila = normalizar(" ".join([str(c) for c in fila.index if not str(c).startswith("__")] + [str(v) for c, v in fila.items() if not str(c).startswith("__")]))
+                    texto_fila = normalizar(" ".join([str(c) for c in fila.index if c != "__hoja_origen__" and c != "__puntaje__"] + [str(v) for c, v in fila.items() if c != "__hoja_origen__" and c != "__puntaje__"]))
                     return all(term in texto_fila for term in palabras)
                 
                 df_resultados = df_prestaciones[df_prestaciones.apply(coincide_examen_suma, axis=1)]
@@ -543,7 +521,7 @@ if dict_hojas_excel is not None:
                     for _, fila in df_resultados.iterrows():
                         puntaje = 10000
                         for p in palabras:
-                            if any(p == normalizar(str(v)).strip() for c, v in fila.items() if not str(c).startswith("__")): puntaje -= 5000
+                            if any(p == normalizar(str(v)).strip() for c, v in fila.items() if c != "__hoja_origen__" and c != "__puntaje__"): puntaje -= 5000
                             else: puntaje -= 500
                                 
                         val0 = normalizar(str(fila.values[0]))
@@ -559,10 +537,10 @@ if dict_hojas_excel is not None:
                     
                     nombre_real = ""
                     for c in mejor_fila.index:
-                        if not str(c).startswith("__") and "archipielago" in normalizar(str(c)): nombre_real = str(mejor_fila[c]); break
+                        if c != "__hoja_origen__" and c != "__puntaje__" and "archipielago" in normalizar(str(c)): nombre_real = str(mejor_fila[c]); break
                     if not nombre_real:
                         for c in mejor_fila.index:
-                            if not str(c).startswith("__") and str(mejor_fila[c]).strip() != "":
+                            if c != "__hoja_origen__" and c != "__puntaje__" and str(mejor_fila[c]).strip() != "":
                                 nombre_real = str(mejor_fila[c])
                                 if len(nombre_real) > 5: break
 
