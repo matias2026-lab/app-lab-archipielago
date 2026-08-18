@@ -27,9 +27,14 @@ st.set_page_config(page_title="Lab Archipiélago", page_icon=icono_app, layout="
 # ==============================================================================
 # 🔐 CONFIGURACIÓN DE USUARIOS
 # ==============================================================================
-USUARIOS = {
-    "659": "12345",
-}
+# ----- MEJORA APLICADA: Uso de st.secrets con respaldo local -----
+try:
+    USUARIOS = st.secrets["USUARIOS"]
+except Exception:
+    USUARIOS = {
+      "659": "12345",
+    }
+# -----------------------------------------------------------------
 
 if "autenticado" not in st.session_state:
   st.session_state.autenticado = False
@@ -190,7 +195,8 @@ ARCHIVO_EXCEL = "APP lab archipielago 2.xlsx"
 
 @st.cache_data(ttl=2)
 def cargar_hojas_y_diccionario(ruta_archivo):
-    if not os.path.exists(ruta_archivo): return None, None
+    # ----- MEJORA APLICADA: Validar retorno de 3 elementos -----
+    if not os.path.exists(ruta_archivo): return None, None, None
     try:
         dict_hojas = pd.read_excel(ruta_archivo, sheet_name=None)
         
@@ -220,10 +226,44 @@ def cargar_hojas_y_diccionario(ruta_archivo):
             df_clean['__hoja_origen__'] = nombre_hoja.strip() 
             dict_limpio[nombre_hoja.strip()] = df_clean
             
-        return dict_limpio, diccionario
-    except Exception: return None, None
+        # ----- MEJORA APLICADA: Pre-concatenación y Pre-normalización para búsquedas súper rápidas -----
+        df_todas = pd.concat(list(dict_limpio.values()), ignore_index=True).fillna("")
+        
+        def pre_calcular_texto(fila):
+            elementos = []
+            tiene_plata = False
+            tiene_codigo = False
+            nombre_oculto = ""
+            for c, v in fila.items():
+                if str(v).strip() != "" and c != "__hoja_origen__":
+                    cn = normalizar(str(c))
+                    vn = normalizar(str(v))
+                    elementos.extend([cn, vn])
+                    if es_col_precio(c): tiene_plata = True
+                    if es_col_codigo(c): tiene_codigo = True
+                    if es_col_nombre(c): nombre_oculto += " " + str(v)
+            
+            texto = " ".join(elementos)
+            if tiene_plata: texto += " precio precios valor valores arancel copago fonasa particular"
+            if tiene_codigo: texto += " codigo codigos"
+            
+            # Verificamos manualmente con diccionario local
+            for term in diccionario["sin_preparacion"]:
+                norm = normalizar(nombre_oculto)
+                if (len(term) <= 4 and re.search(rf'\b{term}\b', norm)) or (len(term) > 4 and term in norm):
+                    texto += " examen examenes sin preparacion no requiere preparacion indicaciones"
+                    break
 
-dict_hojas_excel, diccionario_virtual = cargar_hojas_y_diccionario(ARCHIVO_EXCEL)
+            return texto
+
+        df_todas['__texto_busqueda__'] = df_todas.apply(pre_calcular_texto, axis=1)
+        # -----------------------------------------------------------------------------------------------
+            
+        return dict_limpio, diccionario, df_todas
+    except Exception: return None, None, None
+
+# Recibimos el tercer dataframe cacheado
+dict_hojas_excel, diccionario_virtual, df_todas_las_hojas_cache = cargar_hojas_y_diccionario(ARCHIVO_EXCEL)
 
 # ==============================================================================
 # 🛠️ FUNCIONES DE CÁLCULO Y AGRUPACIÓN
@@ -396,14 +436,18 @@ if dict_hojas_excel is not None:
         
         if consulta_b.strip():
             palabras = [p for p in normalizar(consulta_b).split() if p]
+            # ----- MEJORA APLICADA: Unificar 'horarios' para resolver el bug visual -----
+            palabras = ["horario" if p == "horarios" else p for p in palabras]
+            # --------------------------------------------------------------------------
             palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
             
-            df_todas_las_hojas = pd.concat(list(dict_hojas_excel.values()), ignore_index=True).fillna("")
-
+            # Usamos la data ya procesada desde el caché
             def coincide_examen_general(fila):
                 hoja_origen = normalizar(str(fila.get("__hoja_origen__", "")))
 
-                if normalizar(consulta_b) in ["horario", "horarios", "flujos", "horarios y flujos"]:
+                # ----- MEJORA APLICADA: Añadir .strip() para evitar fallos si el usuario da un espacio extra -----
+                q_norm = normalizar(consulta_b).strip()
+                if q_norm in ["horario", "horarios", "flujos", "horarios y flujos"]:
                     if "horario" in hoja_origen or "flujo" in hoja_origen:
                         nombre_examen_oculto = ""
                         col_n_local, _ = obtener_mejor_col_nombre(fila.to_dict())
@@ -412,38 +456,19 @@ if dict_hojas_excel is not None:
                         return True
                     return False
 
-                elementos_validos = []
-                tiene_plata = False
-                tiene_codigo = False
-                nombre_examen_oculto = ""
-                
-                for c, v in fila.items():
-                    if str(v).strip() != "" and c != "__hoja_origen__":
-                        elementos_validos.append(str(c))
-                        elementos_validos.append(str(v))
-                        if es_col_precio(c): tiene_plata = True
-                        if es_col_codigo(c): tiene_codigo = True
-                        if es_col_nombre(c): nombre_examen_oculto += " " + str(v)
-                
-                valores_str = " ".join([normalizar(str(v)) for c, v in fila.items() if str(v).strip() != "" and c != "__hoja_origen__"])
-                columnas_str = " ".join([normalizar(str(c)) for c, v in fila.items() if str(v).strip() != "" and c != "__hoja_origen__"])
-                
-                if tiene_plata: columnas_str += " precio precios valor valores arancel copago fonasa particular"
-                if tiene_codigo: columnas_str += " codigo codigos"
-                    
-                if verificar_es_sin_prep(nombre_examen_oculto):
-                    inyec = " examen examenes sin preparacion no requiere preparacion indicaciones"
-                    valores_str += inyec
-                    columnas_str += inyec
-
-                texto_total = valores_str + " " + columnas_str
+                # ----- MEJORA APLICADA: Búsqueda súper rápida usando texto pre-calculado -----
+                texto_total = fila.get('__texto_busqueda__', "")
                 
                 if not all(term in texto_total for term in palabras):
                     return False
                     
                 return True
 
-            df_resultados = df_todas_las_hojas[df_todas_las_hojas.apply(coincide_examen_general, axis=1)]
+            df_resultados = df_todas_las_hojas_cache[df_todas_las_hojas_cache.apply(coincide_examen_general, axis=1)].copy()
+            
+            # ----- MEJORA APLICADA: Ocultamos rastro del caché para no desarmar los renderizados de tu código original -----
+            if '__texto_busqueda__' in df_resultados.columns:
+                df_resultados = df_resultados.drop(columns=['__texto_busqueda__'])
 
             if df_resultados.empty:
                 st.warning(f"No se encontró información para '{consulta_b}'.")
@@ -538,6 +563,10 @@ if dict_hojas_excel is not None:
             
             for nombre in nombres_examenes:
                 palabras = [p for p in normalizar(nombre).split() if p]
+                # ----- MEJORA APLICADA: Unificar 'horarios' para resolver el bug visual también en cotizador -----
+                palabras = ["horario" if p == "horarios" else p for p in palabras]
+                # -------------------------------------------------------------------------------------------------
+
                 def coincide_examen_suma(fila):
                     texto_fila = normalizar(" ".join([str(c) for c in fila.index if c != "__hoja_origen__" and c != "__puntaje__"] + [str(v) for c, v in fila.items() if c != "__hoja_origen__" and c != "__puntaje__"]))
                     return all(term in texto_fila for term in palabras)
@@ -581,3 +610,7 @@ if dict_hojas_excel is not None:
             st.divider()
             st.markdown(f"<h2 style='text-align: center; color: #ffffff;'>TOTAL {tipo_pago.upper()}: {formatear_pesos(total)}</h2>", unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
+
+# ----- MEJORA APLICADA: Manejo visual en caso de que falte el Excel en lugar de quedar en blanco -----
+else:
+    st.error("⚠️ Error Crítico: No se encontró el archivo base de datos (APP lab archipielago 2.xlsx). Asegúrate de que el archivo se encuentre en la misma carpeta.")
