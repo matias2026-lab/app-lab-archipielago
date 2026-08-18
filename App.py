@@ -45,15 +45,15 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
   st.session_state.usuario_actual = params["auth_token"]
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PURIFICADOS
+# 🎨 ESTILOS CSS PURIFICADOS (BURDEO + DORADO)
 # ==============================================================================
 st.markdown(
     """
     <style>
-    /* Fondo general - VERDE BOSQUE OSCURO */
+    /* Fondo general - BURDEO ORIGINAL */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
-    [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #1E3F20 !important; }
-    .stApp { background-color: #1E3F20; color: #ffffff; }
+    [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
+    .stApp { background-color: #6a1b29; color: #ffffff; }
     
     /* Ocultar elementos innecesarios */
     footer, #MainMenu, header, .stActionButton, .stDeployButton { display: none !important; visibility: hidden !important; }
@@ -69,50 +69,40 @@ st.markdown(
         font-weight: 700 !important; font-size: 15px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
         transition: 0.2s; width: 100% !important; margin-top: 10px !important;
     }
-    div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #1E3F20 !important; color: #d4af37 !important; border-color: #ffffff !important; }
+    div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* ⚪ BARRAS DE PESTAÑAS (TABS) - BOTONES INDIVIDUALES BLANCOS */
-    
-    /* 1. Contenedor transparente y con separación (gap) entre botones */
+    /* 🟡 PESTAÑAS (TABS) - DISEÑO LIMPIO BURDEO Y DORADO */
     div[data-testid="stTabs"] [role="tablist"] {
         background-color: transparent !important;
-        border-bottom: none !important; /* Quitamos la línea base de Streamlit */
-        gap: 12px !important; /* Espacio entre los botones */
-        padding-bottom: 5px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+        gap: 25px !important;
     }
     
-    /* 2. Diseño base de CADA botón (Cajas blancas individuales) */
+    /* Pestaña Inactiva (Blanco semi-transparente y elegante) */
     button[data-baseweb="tab"] {
-        background-color: #ffffff !important;
-        border-radius: 8px !important;
-        padding: 8px 16px !important;
-        border: 2px solid #ffffff !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2) !important;
-        margin: 0 !important;
+        background-color: transparent !important;
+        border: none !important;
     }
-    
-    /* 3. Texto dentro de los botones (Rojo) */
     button[data-baseweb="tab"] p, 
     button[data-baseweb="tab"] span, 
     div[data-testid="stTabs"] button p {
-        color: #FF4B4B !important;
-        font-size: 1.10rem !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        font-size: 1.15rem !important;
         font-weight: 600 !important;
-        opacity: 0.8 !important; /* Texto un poco más suave cuando no está activo */
     }
     
-    /* 4. Botón ACTIVO (Rojo más fuerte y borde para identificar selección) */
-    button[data-baseweb="tab"][aria-selected="true"] {
-        border: 2px solid #FF4B4B !important; /* Borde rojo exterior para el seleccionado */
-        background-color: #ffffff !important;
-    }
-    
+    /* Pestaña Activa (Dorado brillante para resaltar) */
     button[data-baseweb="tab"][aria-selected="true"] p,
     button[data-baseweb="tab"][aria-selected="true"] span,
     div[data-testid="stTabs"] button[aria-selected="true"] p {
-        color: #FF4B4B !important;
-        font-weight: 800 !important; /* Letra más gruesa */
-        opacity: 1 !important; /* Color al 100% */
+        color: #d4af37 !important;
+        font-weight: 800 !important;
+    }
+    
+    /* Línea inferior de la pestaña activa (Dorado) */
+    button[data-baseweb="tab"][aria-selected="true"],
+    div[data-testid="stTabs"] button[aria-selected="true"] {
+        border-bottom: 3px solid #d4af37 !important;
     }
     
     /* 🟡 Radio Buttons (Particular, Fonasa) - AMARILLO/DORADO */
