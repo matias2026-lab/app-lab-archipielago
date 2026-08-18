@@ -73,17 +73,21 @@ st.markdown(
     }
     div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* ⚪ PESTAÑAS (TABS) - TEXTO BLANCO PERMANENTE */
-    div[data-testid="stTabs"] button,
-    div[data-testid="stTabs"] button p, 
-    div[data-testid="stTabs"] button span {
+    /* ⚪ PESTAÑAS (TABS) - TEXTO BLANCO PERMANENTE (FORZADO) */
+    button[data-baseweb="tab"] p, 
+    button[data-baseweb="tab"] span, 
+    button[data-baseweb="tab"] div,
+    div[data-testid="stTabs"] button p {
         color: #ffffff !important;
-        font-size: 1.15em !important;
+        font-size: 1.15rem !important;
         font-weight: 800 !important;
     }
-    /* Estilo de la pestaña seleccionada (Línea inferior blanca para que haga juego) */
+    
+    /* Línea inferior de la pestaña seleccionada */
+    button[data-baseweb="tab"][aria-selected="true"],
     div[data-testid="stTabs"] button[aria-selected="true"] {
         border-bottom: 3px solid #ffffff !important;
+        border-bottom-color: #ffffff !important;
     }
     
     /* 🟡 Radio Buttons (Particular, Fonasa) - AMARILLO/DORADO */
