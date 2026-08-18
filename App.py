@@ -27,14 +27,12 @@ st.set_page_config(page_title="Lab Archipiélago", page_icon=icono_app, layout="
 # ==============================================================================
 # 🔐 CONFIGURACIÓN DE USUARIOS
 # ==============================================================================
-# ----- MEJORA APLICADA: Uso de st.secrets con respaldo local -----
 try:
     USUARIOS = st.secrets["USUARIOS"]
 except Exception:
     USUARIOS = {
       "659": "12345",
     }
-# -----------------------------------------------------------------
 
 if "autenticado" not in st.session_state:
   st.session_state.autenticado = False
@@ -52,10 +50,10 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
 st.markdown(
     """
     <style>
-    /* Fondo general */
+    /* Fondo general - MODIFICADO A VERDE BOSQUE OSCURO */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
-    [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
-    .stApp { background-color: #6a1b29; color: #ffffff; }
+    [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #1E3F20 !important; }
+    .stApp { background-color: #1E3F20; color: #ffffff; }
     
     /* Ocultar elementos innecesarios */
     footer, #MainMenu, header, .stActionButton, .stDeployButton { display: none !important; visibility: hidden !important; }
@@ -71,7 +69,7 @@ st.markdown(
         font-weight: 700 !important; font-size: 15px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
         transition: 0.2s; width: 100% !important; margin-top: 10px !important;
     }
-    div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
+    div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #1E3F20 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
     /* ⚪ PESTAÑAS (TABS) - TEXTO BLANCO PERMANENTE (FORZADO) */
     button[data-baseweb="tab"] p, 
@@ -199,7 +197,6 @@ ARCHIVO_EXCEL = "APP lab archipielago 2.xlsx"
 
 @st.cache_data(ttl=2)
 def cargar_hojas_y_diccionario(ruta_archivo):
-    # ----- MEJORA APLICADA: Validar retorno de 3 elementos -----
     if not os.path.exists(ruta_archivo): return None, None, None
     try:
         dict_hojas = pd.read_excel(ruta_archivo, sheet_name=None)
@@ -230,7 +227,6 @@ def cargar_hojas_y_diccionario(ruta_archivo):
             df_clean['__hoja_origen__'] = nombre_hoja.strip() 
             dict_limpio[nombre_hoja.strip()] = df_clean
             
-        # ----- MEJORA APLICADA: Pre-concatenación y Pre-normalización para búsquedas súper rápidas -----
         df_todas = pd.concat(list(dict_limpio.values()), ignore_index=True).fillna("")
         
         def pre_calcular_texto(fila):
@@ -251,7 +247,6 @@ def cargar_hojas_y_diccionario(ruta_archivo):
             if tiene_plata: texto += " precio precios valor valores arancel copago fonasa particular"
             if tiene_codigo: texto += " codigo codigos"
             
-            # Verificamos manualmente con diccionario local
             for term in diccionario["sin_preparacion"]:
                 norm = normalizar(nombre_oculto)
                 if (len(term) <= 4 and re.search(rf'\b{term}\b', norm)) or (len(term) > 4 and term in norm):
@@ -261,12 +256,10 @@ def cargar_hojas_y_diccionario(ruta_archivo):
             return texto
 
         df_todas['__texto_busqueda__'] = df_todas.apply(pre_calcular_texto, axis=1)
-        # -----------------------------------------------------------------------------------------------
             
         return dict_limpio, diccionario, df_todas
     except Exception: return None, None, None
 
-# Recibimos el tercer dataframe cacheado
 dict_hojas_excel, diccionario_virtual, df_todas_las_hojas_cache = cargar_hojas_y_diccionario(ARCHIVO_EXCEL)
 
 # ==============================================================================
@@ -440,16 +433,12 @@ if dict_hojas_excel is not None:
         
         if consulta_b.strip():
             palabras = [p for p in normalizar(consulta_b).split() if p]
-            # ----- MEJORA APLICADA: Unificar 'horarios' para resolver el bug visual -----
             palabras = ["horario" if p == "horarios" else p for p in palabras]
-            # --------------------------------------------------------------------------
             palabras_filtro = [p for p in palabras if p not in ["perfil", "hemograma", "examen", "prueba", "test", "de", "la", "el", "los", "las"]]
             
-            # Usamos la data ya procesada desde el caché
             def coincide_examen_general(fila):
                 hoja_origen = normalizar(str(fila.get("__hoja_origen__", "")))
 
-                # ----- MEJORA APLICADA: Añadir .strip() para evitar fallos si el usuario da un espacio extra -----
                 q_norm = normalizar(consulta_b).strip()
                 if q_norm in ["horario", "horarios", "flujos", "horarios y flujos"]:
                     if "horario" in hoja_origen or "flujo" in hoja_origen:
@@ -460,7 +449,6 @@ if dict_hojas_excel is not None:
                         return True
                     return False
 
-                # ----- MEJORA APLICADA: Búsqueda súper rápida usando texto pre-calculado -----
                 texto_total = fila.get('__texto_busqueda__', "")
                 
                 if not all(term in texto_total for term in palabras):
@@ -470,7 +458,6 @@ if dict_hojas_excel is not None:
 
             df_resultados = df_todas_las_hojas_cache[df_todas_las_hojas_cache.apply(coincide_examen_general, axis=1)].copy()
             
-            # ----- MEJORA APLICADA: Ocultamos rastro del caché para no desarmar los renderizados de tu código original -----
             if '__texto_busqueda__' in df_resultados.columns:
                 df_resultados = df_resultados.drop(columns=['__texto_busqueda__'])
 
@@ -567,9 +554,7 @@ if dict_hojas_excel is not None:
             
             for nombre in nombres_examenes:
                 palabras = [p for p in normalizar(nombre).split() if p]
-                # ----- MEJORA APLICADA: Unificar 'horarios' para resolver el bug visual también en cotizador -----
                 palabras = ["horario" if p == "horarios" else p for p in palabras]
-                # -------------------------------------------------------------------------------------------------
 
                 def coincide_examen_suma(fila):
                     texto_fila = normalizar(" ".join([str(c) for c in fila.index if c != "__hoja_origen__" and c != "__puntaje__"] + [str(v) for c, v in fila.items() if c != "__hoja_origen__" and c != "__puntaje__"]))
@@ -615,6 +600,5 @@ if dict_hojas_excel is not None:
             st.markdown(f"<h2 style='text-align: center; color: #ffffff;'>TOTAL {tipo_pago.upper()}: {formatear_pesos(total)}</h2>", unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-# ----- MEJORA APLICADA: Manejo visual en caso de que falte el Excel en lugar de quedar en blanco -----
 else:
     st.error("⚠️ Error Crítico: No se encontró el archivo base de datos (APP lab archipielago 2.xlsx). Asegúrate de que el archivo se encuentre en la misma carpeta.")
