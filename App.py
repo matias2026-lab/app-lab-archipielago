@@ -71,12 +71,22 @@ st.markdown(
     }
     div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #1E3F20 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* ⚪ BARRAS DE PESTAÑAS (TABS) - CONTENEDOR BLANCO */
+    /* ⚪ BARRAS DE PESTAÑAS (TABS) - BOTONES INDIVIDUALES BLANCOS */
+    
+    /* Quitamos el fondo y los bordes al contenedor padre */
     div[data-testid="stTabs"] [role="tablist"] {
+        background-color: transparent !important;
+        border-bottom: none !important;
+        gap: 15px !important; /* Espacio entre los botones */
+    }
+    
+    /* Le damos el fondo blanco, bordes y sombra a cada botón individualmente */
+    button[data-baseweb="tab"] {
         background-color: #ffffff !important;
-        padding: 5px 15px !important;
         border-radius: 12px !important;
+        padding: 10px 20px !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        margin-right: 5px !important;
     }
     
     /* Texto Inactivo (Gris oscuro para buen contraste en fondo blanco) */
@@ -101,7 +111,6 @@ st.markdown(
     button[data-baseweb="tab"][aria-selected="true"],
     div[data-testid="stTabs"] button[aria-selected="true"] {
         border-bottom: 3px solid #FF4B4B !important;
-        border-bottom-color: #FF4B4B !important;
     }
     
     /* 🟡 Radio Buttons (Particular, Fonasa) - AMARILLO/DORADO */
