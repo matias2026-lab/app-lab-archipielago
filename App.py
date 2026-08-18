@@ -533,4 +533,84 @@ if dict_hojas_excel is not None:
 
                         for f in filas_otras:
                             for c, v in f.items():
-                                if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col
+                                if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col_nombre(c): continue
+                                fila_consolidada[c] = v
+
+                        renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
+
+                    else:
+                        for f in lista_filas:
+                            renderizar_tarjeta(f, palabras, palabras_filtro)
+
+    # ---------------------------------------------------------
+    # 🧮 PESTAÑA 2: COTIZADOR MÚLTIPLE
+    # ---------------------------------------------------------
+    with tab_cotizador:
+        st.write("") 
+        tipo_pago = st.radio("Selecciona la Previsión:", ["Particular", "Fonasa"], horizontal=True)
+        consulta_c = st.text_input("Cotizador", key="input_cotizador", placeholder="", label_visibility="collapsed")
+        
+        if consulta_c.strip():
+            df_prestaciones = None
+            for nombre, df in dict_hojas_excel.items():
+                if "prestac" in normalizar(nombre): df_prestaciones = df; break
+            if df_prestaciones is None: df_prestaciones = list(dict_hojas_excel.values())[0]
+
+            st.markdown('<div class="cotizador-box">', unsafe_allow_html=True)
+            
+            nombres_examenes = [x.strip() for x in re.split(r',|\by\b', consulta_c) if x.strip()]
+            total = 0
+            
+            for nombre in nombres_examenes:
+                palabras = [p for p in normalizar(nombre).split() if p]
+                # ----- MEJORA APLICADA: Unificar 'horarios' para resolver el bug visual también en cotizador -----
+                palabras = ["horario" if p == "horarios" else p for p in palabras]
+                # -------------------------------------------------------------------------------------------------
+
+                def coincide_examen_suma(fila):
+                    texto_fila = normalizar(" ".join([str(c) for c in fila.index if c != "__hoja_origen__" and c != "__puntaje__"] + [str(v) for c, v in fila.items() if c != "__hoja_origen__" and c != "__puntaje__"]))
+                    return all(term in texto_fila for term in palabras)
+                
+                df_resultados = df_prestaciones[df_prestaciones.apply(coincide_examen_suma, axis=1)]
+                
+                if not df_resultados.empty:
+                    mejor_fila = None
+                    mejor_puntaje = 999999
+                    
+                    for _, fila in df_resultados.iterrows():
+                        puntaje = 10000
+                        for p in palabras:
+                            if any(p == normalizar(str(v)).strip() for c, v in fila.items() if c != "__hoja_origen__" and c != "__puntaje__"): puntaje -= 5000
+                            else: puntaje -= 500
+                                
+                        val0 = normalizar(str(fila.values[0]))
+                        val1 = normalizar(str(fila.values[1])) if len(fila.values) > 1 else ""
+                        puntaje += len(val0 + " " + val1)
+                            
+                        if puntaje < mejor_puntaje:
+                            mejor_puntaje = puntaje
+                            mejor_fila = fila
+
+                    precio = obtener_precio(mejor_fila, tipo_pago)
+                    total += precio
+                    
+                    nombre_real = ""
+                    for c in mejor_fila.index:
+                        if c != "__hoja_origen__" and c != "__puntaje__" and "archipielago" in normalizar(str(c)): nombre_real = str(mejor_fila[c]); break
+                    if not nombre_real:
+                        for c in mejor_fila.index:
+                            if c != "__hoja_origen__" and c != "__puntaje__" and str(mejor_fila[c]).strip() != "":
+                                nombre_real = str(mejor_fila[c])
+                                if len(nombre_real) > 5: break
+
+                    st.success(f"**{nombre.upper()}** ({nombre_real}) ➔ **{formatear_pesos(precio)}**")
+                else:
+                    st.error(f"**{nombre.upper()}** ➔ No encontrado.")
+                    
+            st.divider()
+            st.markdown(f"<h2 style='text-align: center; color: #ffffff;'>TOTAL {tipo_pago.upper()}: {formatear_pesos(total)}</h2>", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+# ----- MEJORA APLICADA: Manejo visual en caso de que falte el Excel en lugar de quedar en blanco -----
+else:
+    st.error("⚠️ Error Crítico: No se encontró el archivo base de datos (APP lab archipielago 2.xlsx). Asegúrate de que el archivo se encuentre en la misma carpeta.")
