@@ -1,0 +1,36 @@
+name: Navegador Fantasma (Despertador)
+
+on:
+  schedule:
+    # 10:00 AM UTC corresponde a las 06:00 AM en Santiago, Chile (UTC-4)
+    - cron: '0 10 * * *'
+  workflow_dispatch: # Agrega un botón para ejecutarlo manualmente si lo necesitas
+
+jobs:
+  despertar-app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configurar Entorno
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Ejecutar Google Chrome Invisible
+        run: |
+          npm init -y
+          npm install puppeteer
+          node -e "
+          const puppeteer = require('puppeteer');
+          (async () => {
+            console.log('Iniciando el Navegador Fantasma...');
+            const browser = await puppeteer.launch({ headless: 'new' });
+            const page = await browser.newPage();
+            
+            console.log('Visitando el Laboratorio Archipiélago...');
+            // 👇 REEMPLAZA ESTA URL POR LA DE TU APLICACIÓN 👇
+            await page.goto('https://app-lab-archipielago-9gbtcvfhny8pbxbbpnvjfp.streamlit.app/', { waitUntil: 'networkidle2', timeout: 60000 });
+            
+            console.log('¡App despertada y cargada con éxito! Cerrando navegador...');
+            await browser.close();
+          })();
+          "
