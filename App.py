@@ -73,44 +73,46 @@ st.markdown(
 
     /* ⚪ BARRAS DE PESTAÑAS (TABS) - BOTONES INDIVIDUALES BLANCOS */
     
-    /* Quitamos el fondo y los bordes al contenedor padre */
+    /* 1. Contenedor transparente y con separación (gap) entre botones */
     div[data-testid="stTabs"] [role="tablist"] {
         background-color: transparent !important;
-        border-bottom: none !important;
-        gap: 15px !important; /* Espacio entre los botones */
+        border-bottom: none !important; /* Quitamos la línea base de Streamlit */
+        gap: 12px !important; /* Espacio entre los botones */
+        padding-bottom: 5px !important;
     }
     
-    /* Le damos el fondo blanco, bordes y sombra a cada botón individualmente */
+    /* 2. Diseño base de CADA botón (Cajas blancas individuales) */
     button[data-baseweb="tab"] {
         background-color: #ffffff !important;
-        border-radius: 12px !important;
-        padding: 10px 20px !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
-        margin-right: 5px !important;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2) !important;
+        margin: 0 !important;
     }
     
-    /* Texto Inactivo (Gris oscuro para buen contraste en fondo blanco) */
+    /* 3. Texto dentro de los botones (Rojo) */
     button[data-baseweb="tab"] p, 
     button[data-baseweb="tab"] span, 
     div[data-testid="stTabs"] button p {
-        color: #555555 !important;
-        font-size: 1.15rem !important;
-        font-weight: 700 !important;
-        opacity: 1 !important;
+        color: #FF4B4B !important;
+        font-size: 1.10rem !important;
+        font-weight: 600 !important;
+        opacity: 0.8 !important; /* Texto un poco más suave cuando no está activo */
     }
     
-    /* Texto Activo (Rojo) */
+    /* 4. Botón ACTIVO (Rojo más fuerte y borde para identificar selección) */
+    button[data-baseweb="tab"][aria-selected="true"] {
+        border: 2px solid #FF4B4B !important; /* Borde rojo exterior para el seleccionado */
+        background-color: #ffffff !important;
+    }
+    
     button[data-baseweb="tab"][aria-selected="true"] p,
     button[data-baseweb="tab"][aria-selected="true"] span,
     div[data-testid="stTabs"] button[aria-selected="true"] p {
         color: #FF4B4B !important;
-        font-weight: 800 !important;
-    }
-    
-    /* Línea inferior de la pestaña activa (Rojo) */
-    button[data-baseweb="tab"][aria-selected="true"],
-    div[data-testid="stTabs"] button[aria-selected="true"] {
-        border-bottom: 3px solid #FF4B4B !important;
+        font-weight: 800 !important; /* Letra más gruesa */
+        opacity: 1 !important; /* Color al 100% */
     }
     
     /* 🟡 Radio Buttons (Particular, Fonasa) - AMARILLO/DORADO */
