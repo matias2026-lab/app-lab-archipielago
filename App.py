@@ -50,7 +50,7 @@ if "auth_token" in params and params["auth_token"] in USUARIOS:
 st.markdown(
     """
     <style>
-    /* Fondo general - MODIFICADO A VERDE BOSQUE OSCURO */
+    /* Fondo general - VERDE BOSQUE OSCURO */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
     [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #1E3F20 !important; }
     .stApp { background-color: #1E3F20; color: #ffffff; }
@@ -71,12 +71,12 @@ st.markdown(
     }
     div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #1E3F20 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* ⚪ PESTAÑAS (TABS) - TEXTO BLANCO PERMANENTE (FORZADO) */
+    /* 🔴 PESTAÑAS (TABS) - TEXTO ROJO PERMANENTE (FORZADO) */
     button[data-baseweb="tab"] p, 
     button[data-baseweb="tab"] span, 
     button[data-baseweb="tab"] div,
     div[data-testid="stTabs"] button p {
-        color: #ffffff !important;
+        color: #FF4B4B !important;
         font-size: 1.15rem !important;
         font-weight: 800 !important;
     }
@@ -84,8 +84,8 @@ st.markdown(
     /* Línea inferior de la pestaña seleccionada */
     button[data-baseweb="tab"][aria-selected="true"],
     div[data-testid="stTabs"] button[aria-selected="true"] {
-        border-bottom: 3px solid #ffffff !important;
-        border-bottom-color: #ffffff !important;
+        border-bottom: 3px solid #FF4B4B !important;
+        border-bottom-color: #FF4B4B !important;
     }
     
     /* 🟡 Radio Buttons (Particular, Fonasa) - AMARILLO/DORADO */
