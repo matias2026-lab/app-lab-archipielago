@@ -71,17 +71,33 @@ st.markdown(
     }
     div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #1E3F20 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* 🔴 PESTAÑAS (TABS) - TEXTO ROJO PERMANENTE (FORZADO) */
+    /* ⚪ BARRAS DE PESTAÑAS (TABS) - CONTENEDOR BLANCO */
+    div[data-testid="stTabs"] [role="tablist"] {
+        background-color: #ffffff !important;
+        padding: 5px 15px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+    }
+    
+    /* Texto Inactivo (Gris oscuro para buen contraste en fondo blanco) */
     button[data-baseweb="tab"] p, 
     button[data-baseweb="tab"] span, 
-    button[data-baseweb="tab"] div,
     div[data-testid="stTabs"] button p {
-        color: #FF4B4B !important;
+        color: #555555 !important;
         font-size: 1.15rem !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+    }
+    
+    /* Texto Activo (Rojo) */
+    button[data-baseweb="tab"][aria-selected="true"] p,
+    button[data-baseweb="tab"][aria-selected="true"] span,
+    div[data-testid="stTabs"] button[aria-selected="true"] p {
+        color: #FF4B4B !important;
         font-weight: 800 !important;
     }
     
-    /* Línea inferior de la pestaña seleccionada */
+    /* Línea inferior de la pestaña activa (Rojo) */
     button[data-baseweb="tab"][aria-selected="true"],
     div[data-testid="stTabs"] button[aria-selected="true"] {
         border-bottom: 3px solid #FF4B4B !important;
