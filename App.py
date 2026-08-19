@@ -509,7 +509,9 @@ if dict_hojas_excel is not None:
                     lista_filas = grupo['filas']
                     tiene_gine = any("ginecologico" in normalizar(str(f.get("__hoja_origen__", ""))) for f in lista_filas)
                     tiene_prest = any("prestac" in normalizar(str(f.get("__hoja_origen__", ""))) for f in lista_filas)
+                    tiene_barnafi = any("barnafi" in normalizar(str(f.get("__hoja_origen__", ""))) or "bklab" in normalizar(str(f.get("__hoja_origen__", ""))) for f in lista_filas)
 
+                    # 1. Consolidado Maestro Ginecológico + Prestaciones
                     if tiene_gine and tiene_prest:
                         fila_gine = next((f for f in lista_filas if "ginecologico" in normalizar(str(f.get("__hoja_origen__", "")))), None)
                         fila_prest = next((f for f in lista_filas if "prestac" in normalizar(str(f.get("__hoja_origen__", "")))), None)
@@ -543,6 +545,50 @@ if dict_hojas_excel is not None:
                             for c, v in f.items():
                                 if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col_nombre(c): continue
                                 fila_consolidada[c] = v
+
+                        renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
+
+                    # 2. NUEVA MEJORA: Consolidado Exámenes Barnafi + Prestaciones
+                    elif tiene_barnafi and tiene_prest:
+                        fila_barnafi = next((f for f in lista_filas if "barnafi" in normalizar(str(f.get("__hoja_origen__", ""))) or "bklab" in normalizar(str(f.get("__hoja_origen__", "")))), None)
+                        fila_prest = next((f for f in lista_filas if "prestac" in normalizar(str(f.get("__hoja_origen__", "")))), None)
+                        filas_otras = [f for f in lista_filas if f != fila_barnafi and f != fila_prest]
+
+                        fila_consolidada = {}
+
+                        # Base: Toda la información de la hoja Exámenes Barnafi
+                        for c, v in fila_barnafi.items():
+                            if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
+                            fila_consolidada[c] = v
+
+                        # Agregar información no coincidente de Prestaciones
+                        for c, v in fila_prest.items():
+                            if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
+                            
+                            # Omitir el nombre de Prestaciones si Barnafi ya tiene nombre oficial
+                            if es_col_nombre(c):
+                                col_n_b, _ = obtener_mejor_col_nombre(fila_barnafi)
+                                if col_n_b and str(fila_barnafi.get(col_n_b, "")).strip() != "":
+                                    continue
+                                    
+                            # Omitir días/tiempos de proceso de Prestaciones si Barnafi ya los especifica
+                            if es_col_tiempo(c):
+                                has_time_b = any(es_col_tiempo(bc) and str(bv).strip() != "" for bc, bv in fila_barnafi.items())
+                                if has_time_b:
+                                    continue
+                            
+                            # Evitar columnas duplicadas
+                            if any(normalizar(c).strip() == normalizar(ec).strip() for ec in fila_consolidada.keys()):
+                                continue
+
+                            fila_consolidada[c] = v
+
+                        # Agregar información extra restante si existiera
+                        for f in filas_otras:
+                            for c, v in f.items():
+                                if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col_nombre(c): continue
+                                if not any(normalizar(c).strip() == normalizar(ec).strip() for ec in fila_consolidada.keys()):
+                                    fila_consolidada[c] = v
 
                         renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
 
