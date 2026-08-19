@@ -548,7 +548,7 @@ if dict_hojas_excel is not None:
 
                         renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
 
-                    # 2. NUEVA MEJORA: Consolidado Exámenes Barnafi + Prestaciones
+                    # 2. Consolidado Exámenes Barnafi + Prestaciones (LÓGICA MEJORADA)
                     elif tiene_barnafi and tiene_prest:
                         fila_barnafi = next((f for f in lista_filas if "barnafi" in normalizar(str(f.get("__hoja_origen__", ""))) or "bklab" in normalizar(str(f.get("__hoja_origen__", "")))), None)
                         fila_prest = next((f for f in lista_filas if "prestac" in normalizar(str(f.get("__hoja_origen__", "")))), None)
@@ -556,34 +556,25 @@ if dict_hojas_excel is not None:
 
                         fila_consolidada = {}
 
-                        # Base: Toda la información de la hoja Exámenes Barnafi
+                        # Base: Toda la información oficial de la hoja Exámenes Barnafi
                         for c, v in fila_barnafi.items():
                             if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
                             fila_consolidada[c] = v
 
-                        # Agregar información no coincidente de Prestaciones
+                        # Filtrar estrictamente ÚNICAMENTE las 5 columnas solicitadas de la hoja Prestaciones
+                        columnas_permitidas_prest = ["seccion", "laboratorio de procesamiento", "contenedor", "tipo de muestra", "ayuno"]
+
                         for c, v in fila_prest.items():
                             if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
                             
-                            # Omitir el nombre de Prestaciones si Barnafi ya tiene nombre oficial
-                            if es_col_nombre(c):
-                                col_n_b, _ = obtener_mejor_col_nombre(fila_barnafi)
-                                if col_n_b and str(fila_barnafi.get(col_n_b, "")).strip() != "":
-                                    continue
-                                    
-                            # Omitir días/tiempos de proceso de Prestaciones si Barnafi ya los especifica
-                            if es_col_tiempo(c):
-                                has_time_b = any(es_col_tiempo(bc) and str(bv).strip() != "" for bc, bv in fila_barnafi.items())
-                                if has_time_b:
-                                    continue
-                            
-                            # Evitar columnas duplicadas
-                            if any(normalizar(c).strip() == normalizar(ec).strip() for ec in fila_consolidada.keys()):
-                                continue
+                            cn = normalizar(str(c)).strip()
+                            # Verificar si la columna corresponde exactamente a alguna de las 5 permitidas
+                            if any(p in cn for p in columnas_permitidas_prest):
+                                # Evitar duplicar clave si Barnafi ya la incluía
+                                if not any(normalizar(ec).strip() == cn for ec in fila_consolidada.keys()):
+                                    fila_consolidada[c] = v
 
-                            fila_consolidada[c] = v
-
-                        # Agregar información extra restante si existiera
+                        # Agregar información extra de otras hojas si existieran (ej. horarios/flujos)
                         for f in filas_otras:
                             for c, v in f.items():
                                 if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col_nombre(c): continue
