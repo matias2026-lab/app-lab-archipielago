@@ -73,102 +73,180 @@ def leer_ultimos_eventos(n=15):
         return []
 
 # ==============================================================================
-# 🎨 ESTILOS CSS PURIFICADOS (BURDEO + DORADO)
+# 🎨 ESTILOS (BURDEO + DORADO — versión profesional)
 # ==============================================================================
 st.markdown(
     """
     <style>
-    /* Fondo general - BURDEO ORIGINAL */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+        --burdeo: #6a1b29;
+        --burdeo-oscuro: #4a1119;
+        --burdeo-suave: #7d2436;
+        --dorado: #c8a24a;
+        --dorado-claro: #e0c887;
+        --texto-claro: #f4ece6;
+    }
+
+    html, body, #root, .stApp, p, span, div, label, button, input, textarea {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+    /* Los íconos (ej. ojo de mostrar/ocultar contraseña) son texto con una tipografía de
+    símbolos: si se les fuerza Inter, se ve el nombre del ícono en vez del dibujo. */
+    [data-testid="stIconMaterial"] {
+        font-family: "Material Symbols Rounded" !important;
+    }
+
+    /* Fondo general */
     html, body, #root { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; overscroll-behavior: none !important; }
-    [data-testid="stAppViewContainer"] { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important; background-color: #6a1b29 !important; }
-    .stApp { background-color: #6a1b29; color: #ffffff; }
+    [data-testid="stAppViewContainer"] {
+        position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
+        overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch !important;
+        background: radial-gradient(120% 100% at 50% 0%, var(--burdeo-suave) 0%, var(--burdeo) 45%, var(--burdeo-oscuro) 100%) !important;
+    }
+    .stApp { background-color: var(--burdeo); color: var(--texto-claro); }
+    .main .block-container { max-width: 760px; padding-top: 1.75rem; padding-bottom: 3rem; }
 
     /* Ocultar elementos innecesarios */
     footer, #MainMenu, header, .stActionButton, .stDeployButton { display: none !important; visibility: hidden !important; }
     [data-testid="InputInstructions"], [data-testid="stInputInstructions"] { display: none !important; }
 
+    /* Encabezado: logo + título */
+    .app-logo { text-align: center; margin: 2px 0 10px; }
+    .app-logo img { width: 108px; max-width: 55%; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35)); }
+    .title-text {
+        color: #ffffff !important; text-align: center; font-weight: 700 !important;
+        font-size: clamp(1.5rem, 5vw, 2.05rem) !important; letter-spacing: 0.2px;
+        margin-top: 2px !important; margin-bottom: 2px !important;
+    }
+    .subtitle-text {
+        text-align: center; color: rgba(244,236,230,0.55); font-size: 0.78rem; font-weight: 600;
+        letter-spacing: 2px; text-transform: uppercase; margin-bottom: 22px;
+    }
+    .header-divider { height: 1px; max-width: 260px; margin: 0 auto 26px; background: linear-gradient(90deg, transparent, rgba(200,162,74,0.55), transparent); }
+
+    /* Etiquetas de todos los widgets */
+    label p, .stTextInput label p, [data-testid="stWidgetLabel"] p {
+        color: rgba(244,236,230,0.8) !important; font-weight: 600 !important; font-size: 13px !important;
+        text-transform: uppercase; letter-spacing: 0.6px;
+    }
+
     /* Formulario de Login */
-    div[data-testid="stForm"] { background-color: transparent !important; border: 2px solid #d4af37 !important; border-radius: 16px !important; padding: 25px 20px !important; }
-    .stTextInput label p, .stTextInput label, label { color: #ffffff !important; font-weight: 700 !important; font-size: 16px !important; }
-
-    /* Botones */
-    div[data-testid="stButton"] > button, div[data-testid="stFormSubmitButton"] > button {
-        background-color: #48121b !important; color: #ffffff !important; border: 1.5px solid #d4af37 !important; border-radius: 10px !important;
-        font-weight: 700 !important; font-size: 15px !important; padding: 8px 16px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
-        transition: 0.2s; width: 100% !important; margin-top: 10px !important;
+    div[data-testid="stForm"] {
+        background-color: rgba(0,0,0,0.16) !important; border: 1px solid rgba(200,162,74,0.35) !important;
+        border-radius: 18px !important; padding: 30px 26px !important; box-shadow: 0 14px 32px rgba(0,0,0,0.28);
     }
-    div[data-testid="stButton"] > button:active, div[data-testid="stFormSubmitButton"] > button:active { background-color: #6a1b29 !important; color: #d4af37 !important; border-color: #ffffff !important; }
 
-    /* 🟡 PESTAÑAS (TABS) - DISEÑO LIMPIO BURDEO Y DORADO */
-    div[data-testid="stTabs"] [role="tablist"] {
+    /* Botones secundarios (barra superior, sugerencias, "Compartir") — discretos */
+    div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"],
+    a[data-testid="stBaseLinkButton-secondary"] {
+        background-color: rgba(255,255,255,0.04) !important; color: rgba(244,236,230,0.85) !important;
+        border: 1px solid rgba(244,236,230,0.28) !important; border-radius: 9px !important;
+        font-weight: 600 !important; font-size: 13.5px !important; padding: 9px 14px !important;
+        box-shadow: none !important; transition: all 0.15s ease;
+    }
+    div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"]:hover,
+    a[data-testid="stBaseLinkButton-secondary"]:hover {
+        border-color: var(--dorado) !important; color: var(--dorado-claro) !important; background-color: rgba(200,162,74,0.10) !important;
+    }
+
+    /* Botones primarios (Iniciar Sesión, Descargar PDF) — con jerarquía visual */
+    div[data-testid="stButton"] button[data-testid="stBaseButton-primary"],
+    div[data-testid="stFormSubmitButton"] button,
+    div[data-testid="stDownloadButton"] button {
+        background: linear-gradient(180deg, var(--dorado-claro), var(--dorado)) !important; color: #3b2c0c !important;
+        border: none !important; border-radius: 10px !important; font-weight: 700 !important; font-size: 15px !important;
+        padding: 10px 18px !important; box-shadow: 0 8px 18px rgba(0,0,0,0.28) !important; transition: all 0.15s ease;
+    }
+    div[data-testid="stButton"] button[data-testid="stBaseButton-primary"]:hover,
+    div[data-testid="stFormSubmitButton"] button:hover,
+    div[data-testid="stDownloadButton"] button:hover { filter: brightness(1.06); transform: translateY(-1px); }
+    div[data-testid="stButton"] button[data-testid="stBaseButton-primary"]:active,
+    div[data-testid="stFormSubmitButton"] button:active,
+    div[data-testid="stDownloadButton"] button:active { transform: translateY(0); filter: brightness(0.95); }
+
+    div[data-testid="stButton"] button, div[data-testid="stFormSubmitButton"] button,
+    div[data-testid="stDownloadButton"] button, a[data-testid="stBaseLinkButton-secondary"] { width: 100% !important; }
+
+    /* 🟡 PESTAÑAS (TABS) */
+    [role="tablist"] {
         background-color: transparent !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-        gap: 25px !important;
+        border-bottom: 1px solid rgba(244,236,230,0.14) !important;
+        gap: 30px !important;
     }
-
-    /* Pestaña Inactiva (Blanco semi-transparente y elegante) */
-    button[data-baseweb="tab"] {
-        background-color: transparent !important;
-        border: none !important;
-    }
-    button[data-baseweb="tab"] p,
-    button[data-baseweb="tab"] span,
-    div[data-testid="stTabs"] button p {
-        color: rgba(255, 255, 255, 0.7) !important;
-        font-size: 1.15rem !important;
+    div[data-testid="stTab"] { background-color: transparent !important; border: none !important; padding-bottom: 10px !important; }
+    div[data-testid="stTab"] p {
+        color: rgba(244,236,230,0.5) !important;
+        font-size: 1.02rem !important;
         font-weight: 600 !important;
     }
-
-    /* Pestaña Activa (Dorado brillante para resaltar) */
-    button[data-baseweb="tab"][aria-selected="true"] p,
-    button[data-baseweb="tab"][aria-selected="true"] span,
-    div[data-testid="stTabs"] button[aria-selected="true"] p {
-        color: #d4af37 !important;
-        font-weight: 800 !important;
+    div[data-testid="stTab"][aria-selected="true"] p {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+    div[data-testid="stTab"][aria-selected="true"] {
+        border-bottom: 2.5px solid var(--dorado) !important;
     }
 
-    /* Línea inferior de la pestaña activa (Dorado) */
-    button[data-baseweb="tab"][aria-selected="true"],
-    div[data-testid="stTabs"] button[aria-selected="true"] {
-        border-bottom: 3px solid #d4af37 !important;
-    }
-
-    /* 🟡 Radio Buttons (Particular, Fonasa) - AMARILLO/DORADO */
+    /* 🟡 Radio Buttons (Particular, Fonasa) */
     div[role="radiogroup"] label p,
     div[role="radiogroup"] label span,
     div[role="radiogroup"] label div {
-        color: #d4af37 !important;
-        font-weight: 700 !important;
-        font-size: 16px !important;
-    }
-    div[data-testid="stRadio"] > label p,
-    div[data-testid="stRadio"] > label {
-        color: #ffffff !important;
+        color: rgba(244,236,230,0.92) !important;
+        font-weight: 600 !important;
+        font-size: 15px !important;
+        text-transform: none;
+        letter-spacing: normal;
     }
 
     /* Inputs de texto */
-    div[data-baseweb="input"], div[data-baseweb="base-input"] {
+    div[data-testid="stTextInputRootElement"], div[data-baseweb="input"], div[data-baseweb="base-input"] {
         background-color: #ffffff !important;
-        border-radius: 25px !important;
+        border-radius: 14px !important;
         border: none !important;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.22) !important;
     }
-    div[data-baseweb="input"] input, div[data-baseweb="base-input"] input, input[type="text"], input[type="password"] {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
-        caret-color: #000000 !important;
-        font-size: 16px !important;
-        padding: 12px 18px !important;
+    div[data-testid="stTextInputRootElement"] input, div[data-baseweb="input"] input, div[data-baseweb="base-input"] input,
+    input[type="text"], input[type="password"] {
+        color: #1a1a1a !important;
+        -webkit-text-fill-color: #1a1a1a !important;
+        caret-color: var(--burdeo) !important;
+        font-size: 15.5px !important;
+        padding: 13px 18px !important;
         background-color: #ffffff !important;
     }
+    div[data-testid="stTextInputRootElement"]:focus-within, div[data-baseweb="input"]:focus-within, div[data-baseweb="base-input"]:focus-within {
+        box-shadow: 0 0 0 3px rgba(200,162,74,0.45), 0 6px 16px rgba(0,0,0,0.22) !important;
+    }
+
+    /* Filtro de categoría (multiselect) */
+    div[data-baseweb="select"] > div, div[data-testid="stMultiSelect"] [data-baseweb="select"] {
+        background-color: #ffffff !important; border-radius: 14px !important; border: none !important;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.22) !important;
+    }
+    [data-baseweb="tag"] { background-color: var(--burdeo) !important; border-radius: 6px !important; }
+    [data-baseweb="tag"] span, [data-baseweb="tag"] svg { color: #ffffff !important; fill: #ffffff !important; }
 
     /* Tarjetas de resultados */
-    .card-box { background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 25px; border-radius: 12px; border-left: 8px solid #d4af37; margin-bottom: 20px; box-shadow: 0 6px 15px rgba(0,0,0,0.25); }
-    .row-item { margin-bottom: 10px; font-size: 15px; color: #1a1a1a !important; border-radius: 6px; padding: 4px 6px;}
-    .col-name { font-weight: 700; color: #6a1b29 !important; }
-    .col-val { color: #222222 !important; font-weight: 500; }
-    .title-text { color: #ffffff !important; text-align: center; font-weight: 800; font-size: clamp(1.4rem, 6vw, 2rem) !important; margin-top: 5px; margin-bottom: 15px; }
+    .card-box {
+        background-color: #ffffff !important; color: #1a1a1a !important; padding: 22px 26px; border-radius: 14px;
+        border-top: 3px solid var(--dorado); margin-bottom: 18px; box-shadow: 0 10px 26px rgba(0,0,0,0.24);
+    }
+    .row-item { margin-bottom: 9px; font-size: 14.5px; color: #1a1a1a !important; border-radius: 6px; padding: 3px 0; }
+    .col-name { font-weight: 600; color: var(--burdeo) !important; }
+    .col-val { color: #2a2a2a !important; font-weight: 500; }
 
-    .cotizador-box { margin-bottom: 20px; padding-top: 10px; }
+    .cotizador-box { margin-bottom: 20px; padding-top: 8px; }
+
+    /* Alertas (success / warning / error / info) coherentes con la paleta */
+    div[data-testid="stAlert"] { border-radius: 12px !important; border: none !important; box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
+
+    /* Barra lateral */
+    section[data-testid="stSidebar"] { background-color: var(--burdeo-oscuro) !important; border-right: 1px solid rgba(200,162,74,0.2); }
+    section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span, section[data-testid="stSidebar"] label {
+        color: rgba(244,236,230,0.85) !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -195,9 +273,11 @@ if st.session_state.autenticado:
 if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
   mime = "image/png" if logo_encontrado.endswith(".png") else "image/webp"
-  st.markdown(f'<div style="text-align: center; margin-bottom: 5px; margin-top: 5px;"><img src="data:{mime};base64,{img_b64}" style="width: 130px; max-width: 70%;"></div>', unsafe_allow_html=True)
+  st.markdown(f'<div class="app-logo"><img src="data:{mime};base64,{img_b64}"></div>', unsafe_allow_html=True)
 
 st.markdown('<h1 class="title-text">Laboratorio Archipiélago</h1>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle-text">Sistema de Consulta y Cotización de Exámenes</div>', unsafe_allow_html=True)
+st.markdown('<div class="header-divider"></div>', unsafe_allow_html=True)
 
 # ==============================================================================
 # 🔐 PANTALLA DE INICIO DE SESIÓN
@@ -215,7 +295,7 @@ if not st.session_state.autenticado:
     with st.form("form_login", clear_on_submit=False):
       usuario_input = st.text_input("Usuario", placeholder="").strip()
       clave_input = st.text_input("Contraseña", type="password").strip()
-      if st.form_submit_button("Iniciar Sesión", use_container_width=True):
+      if st.form_submit_button("Iniciar Sesión", use_container_width=True, type="primary"):
         if usuario_input in USUARIOS and USUARIOS[usuario_input] == clave_input:
           st.session_state.autenticado = True
           st.session_state.usuario_actual = usuario_input
@@ -245,7 +325,7 @@ def es_col_incluye(c): return "incluye" in normalizar(str(c))
 def es_col_codigo(c): return "codigo" in normalizar(str(c)) or "bklab" in normalizar(str(c)) or "proactive" in normalizar(str(c))
 def es_col_nombre(c):
     cn = normalizar(str(c)).strip()
-    return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or "examen" in cn or "unnamed" in cn
+    return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or "examen" in cn or "unnamed" in cn or "descripcion" in cn
 def es_col_categoria(c):
     cn = normalizar(str(c)).strip()
     return cn == "seccion" or "seccion" in cn or cn == "categoria" or "categoria" in cn
@@ -490,6 +570,70 @@ def busqueda_fuzzy(df, consulta, min_score=70, top_n=40):
     posiciones = [idx for _, _score, idx in coincidencias]
     return df.iloc[posiciones]
 
+def _campo_nombre_fusion(c):
+    cn = normalizar(str(c))
+    return "archipielago" in cn or "descripcion" in cn or "prestacion" in cn or cn.strip() == "nombre" or "examen" in cn
+def _campo_fonasa_fusion(c):
+    cn = normalizar(str(c))
+    return "codigo" in cn and "fonasa" in cn
+def _campo_tiempo_resp_fusion(c):
+    cn = normalizar(str(c))
+    return "tiempo" in cn and "respuesta" in cn
+def _campo_dia_proceso_fusion(c):
+    cn = normalizar(str(c))
+    return "dia" in cn and "proceso" in cn
+def _campo_precio_fusion(c):
+    return es_col_precio(c) and not _campo_nombre_fusion(c)
+def _es_campo_compartido_fusion(c):
+    return _campo_nombre_fusion(c) or _campo_fonasa_fusion(c) or _campo_tiempo_resp_fusion(c) or _campo_dia_proceso_fusion(c) or _campo_precio_fusion(c)
+
+def fusionar_prestacion_y_barnafi(fila_prest, fila_barnafi):
+    """Cuando un examen aparece en 'prestaciones' Y en 'Examenes barnafi (BK)' (es decir,
+    se deriva al laboratorio BK), ambas filas describen la MISMA prestación y no deben
+    mostrarse como dos tarjetas separadas.
+
+    Regla: en los campos que existen en ambas hojas (nombre, código FONASA, tiempo de
+    respuesta, día de proceso) se usa el valor de Barnafi -EXCEPTO el precio, que siempre
+    se toma de 'prestaciones'-. Los campos exclusivos de 'prestaciones' (ayuno, contenedor,
+    tipo de muestra, sección, etc.) y los exclusivos de Barnafi (código BK, horas de
+    proceso) se agregan tal cual, formando una sola tarjeta completa."""
+    fp = fila_prest.to_dict() if hasattr(fila_prest, "to_dict") else dict(fila_prest)
+    fb = fila_barnafi.to_dict() if hasattr(fila_barnafi, "to_dict") else dict(fila_barnafi)
+
+    consolidada = {}
+
+    # 1. Campos exclusivos de 'prestaciones' (no se solapan con Barnafi ni son precio).
+    for c, v in fp.items():
+        if c in COLUMNAS_INTERNAS or str(v).strip() == "": continue
+        if _es_campo_compartido_fusion(c): continue
+        consolidada[c] = v
+
+    # 2. Precio: siempre desde 'prestaciones'.
+    for c, v in fp.items():
+        if c in COLUMNAS_INTERNAS or str(v).strip() == "": continue
+        if _campo_precio_fusion(c):
+            consolidada[c] = v
+
+    # 3. Campos compartidos (nombre, código FONASA, tiempo de respuesta, día de proceso):
+    #    preferir Barnafi; si Barnafi no trae el dato, usar el de 'prestaciones'.
+    for check in (_campo_nombre_fusion, _campo_fonasa_fusion, _campo_tiempo_resp_fusion, _campo_dia_proceso_fusion):
+        col_b = next((c for c, v in fb.items() if c not in COLUMNAS_INTERNAS and check(c) and not _campo_precio_fusion(c) and str(v).strip() != ""), None)
+        if col_b:
+            consolidada[col_b] = fb[col_b]
+        else:
+            col_p = next((c for c, v in fp.items() if c not in COLUMNAS_INTERNAS and check(c) and not _campo_precio_fusion(c) and str(v).strip() != ""), None)
+            if col_p and col_p not in consolidada:
+                consolidada[col_p] = fp[col_p]
+
+    # 4. Campos exclusivos de Barnafi (código BK, horas de proceso, etc.).
+    for c, v in fb.items():
+        if c in COLUMNAS_INTERNAS or str(v).strip() == "": continue
+        if _es_campo_compartido_fusion(c): continue
+        if c not in consolidada:
+            consolidada[c] = v
+
+    return consolidada
+
 # ==============================================================================
 # 🎨 RENDERIZADOR GRÁFICO DE TARJETAS
 # ==============================================================================
@@ -618,6 +762,12 @@ if dict_hojas_excel is not None:
         categorias_disponibles = sorted({str(c) for c in df_todas_las_hojas_cache['__categoria__'].unique() if str(c).strip()})
         categorias_sel = st.multiselect("Filtrar por categoría/sección (opcional)", categorias_disponibles, key="filtro_categorias")
 
+        # Streamlit no permite escribir en st.session_state["input_busqueda"] una vez que
+        # ese widget ya fue instanciado en este mismo ciclo. Por eso las sugerencias usan
+        # una clave de "espera" que se aplica ANTES de crear el text_input.
+        if "_pendiente_busqueda" in st.session_state:
+            st.session_state["input_busqueda"] = st.session_state.pop("_pendiente_busqueda")
+
         consulta_b = st.text_input("Búsqueda", key="input_busqueda", placeholder="", label_visibility="collapsed")
 
         if consulta_b.strip() and len(consulta_b.strip()) >= 2:
@@ -628,7 +778,7 @@ if dict_hojas_excel is not None:
                 cols_sug = st.columns(4)
                 for i, s in enumerate(sugerencias):
                     if cols_sug[i % 4].button(s, key=f"sug_{i}_{s}", use_container_width=True):
-                        st.session_state["input_busqueda"] = s
+                        st.session_state["_pendiente_busqueda"] = s
                         st.rerun()
 
         if consulta_b.strip() or categorias_sel:
@@ -711,8 +861,26 @@ if dict_hojas_excel is not None:
                     lista_filas = grupo['filas']
                     tiene_gine = any("ginecologico" in normalizar(str(f.get("__hoja_origen__", ""))) for f in lista_filas)
                     tiene_prest = any("prestac" in normalizar(str(f.get("__hoja_origen__", ""))) for f in lista_filas)
+                    tiene_barnafi_bk = any("barnafi" in normalizar(str(f.get("__hoja_origen__", ""))) or "bklab" in normalizar(str(f.get("__hoja_origen__", ""))) for f in lista_filas)
 
-                    if tiene_gine and tiene_prest:
+                    if tiene_prest and tiene_barnafi_bk and not tiene_gine:
+                        # Examen derivado al laboratorio BK: aparece en 'prestaciones' y en
+                        # 'Examenes barnafi (BK)'. Se fusionan en una sola tarjeta (ver
+                        # fusionar_prestacion_y_barnafi) en vez de mostrar dos duplicadas.
+                        fila_prest = next((f for f in lista_filas if "prestac" in normalizar(str(f.get("__hoja_origen__", "")))), None)
+                        fila_barnafi = next((f for f in lista_filas if "barnafi" in normalizar(str(f.get("__hoja_origen__", ""))) or "bklab" in normalizar(str(f.get("__hoja_origen__", "")))), None)
+                        filas_otras = [f for f in lista_filas if f != fila_prest and f != fila_barnafi]
+
+                        fila_consolidada = fusionar_prestacion_y_barnafi(fila_prest, fila_barnafi)
+
+                        for f in filas_otras:
+                            for c, v in f.items():
+                                if c in COLUMNAS_INTERNAS or str(v).strip() == "" or es_col_nombre(c): continue
+                                fila_consolidada[c] = v
+
+                        renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
+
+                    elif tiene_gine and tiene_prest:
                         fila_gine = next((f for f in lista_filas if "ginecologico" in normalizar(str(f.get("__hoja_origen__", "")))), None)
                         fila_prest = next((f for f in lista_filas if "prestac" in normalizar(str(f.get("__hoja_origen__", "")))), None)
                         fila_barnafi = next((f for f in lista_filas if "barnafi" in normalizar(str(f.get("__hoja_origen__", ""))) or "bklab" in normalizar(str(f.get("__hoja_origen__", "")))), None)
@@ -781,6 +949,23 @@ if dict_hojas_excel is not None:
                 nombre_completo = str(fila[col_n]) if col_n else ""
                 nombres_cortos_prestaciones.append(normalizar(acortar_nombre_examen(nombre_completo)))
 
+            # Índice de exámenes derivados a Barnafi (BK), por nombre normalizado, para
+            # poder fusionar el nombre igual que en el Buscador (misma prestación, no
+            # duplicarla). No se usa el código FONASA como llave porque en la práctica
+            # muchos exámenes derivados a BK no traen ese código en ninguna de las dos hojas.
+            df_barnafi = None
+            for nombre_hoja, df in dict_hojas_excel.items():
+                if "barnafi" in normalizar(nombre_hoja) or "bklab" in normalizar(nombre_hoja): df_barnafi = df; break
+
+            barnafi_por_nombre = {}
+            if df_barnafi is not None:
+                for _, fila_b in df_barnafi.iterrows():
+                    fila_b_dict = fila_b.to_dict()
+                    col_nb, _ = obtener_mejor_col_nombre(fila_b_dict)
+                    if col_nb:
+                        clave = normalizar_nombre_agrupacion(str(fila_b_dict[col_nb]))
+                        if clave: barnafi_por_nombre[clave] = fila_b_dict
+
             st.markdown('<div class="cotizador-box">', unsafe_allow_html=True)
 
             nombres_examenes = [x.strip() for x in re.split(r',|\by\b', consulta_c) if x.strip()]
@@ -827,14 +1012,18 @@ if dict_hojas_excel is not None:
                     precio = obtener_precio(mejor_fila, tipo_pago)
                     total += precio
 
-                    nombre_real = ""
-                    for c in mejor_fila.index:
-                        if c not in COLUMNAS_INTERNAS and "archipielago" in normalizar(str(c)): nombre_real = str(mejor_fila[c]); break
-                    if not nombre_real:
-                        for c in mejor_fila.index:
-                            if c not in COLUMNAS_INTERNAS and str(mejor_fila[c]).strip() != "":
-                                nombre_real = str(mejor_fila[c])
-                                if len(nombre_real) > 5: break
+                    # Si esta prestación también existe en Barnafi (mismo nombre normalizado),
+                    # el nombre se toma fusionado (Barnafi manda en el nombre, el precio
+                    # sigue viniendo de 'prestaciones' vía obtener_precio de arriba).
+                    fila_para_nombre = mejor_fila.to_dict()
+                    col_n_prest, _ = obtener_mejor_col_nombre(fila_para_nombre)
+                    if col_n_prest:
+                        clave_prest = normalizar_nombre_agrupacion(str(fila_para_nombre[col_n_prest]))
+                        if clave_prest in barnafi_por_nombre:
+                            fila_para_nombre = fusionar_prestacion_y_barnafi(mejor_fila, barnafi_por_nombre[clave_prest])
+
+                    col_nombre_real, _ = obtener_mejor_col_nombre(fila_para_nombre)
+                    nombre_real = str(fila_para_nombre.get(col_nombre_real, "")).strip() if col_nombre_real else ""
 
                     items_cotizacion.append((nombre_real or nombre.upper(), precio, es_aproximado))
 
@@ -872,7 +1061,7 @@ if dict_hojas_excel is not None:
                     st.download_button(
                         "📄 Descargar PDF", data=pdf_bytes,
                         file_name=f"cotizacion_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                        mime="application/pdf", use_container_width=True,
+                        mime="application/pdf", use_container_width=True, type="primary",
                     )
                 with col_wsp:
                     st.link_button("📲 Compartir por WhatsApp", url_wsp, use_container_width=True)
