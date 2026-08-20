@@ -2,7 +2,6 @@ streamlit
 pandas
 openpyxl
 Pillow
-pyzbar
 pytesseract
-gspread
-oauth2client
+rapidfuzz
+fpdf2
