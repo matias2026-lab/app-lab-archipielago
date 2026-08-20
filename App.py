@@ -78,7 +78,7 @@ st.markdown(
         gap: 25px !important;
     }
     
-    /* Pestaña Inactiva (Blanco semi-transparente y elegante) */
+    /* Pestaña Inactiva */
     button[data-baseweb="tab"] {
         background-color: transparent !important;
         border: none !important;
@@ -91,7 +91,7 @@ st.markdown(
         font-weight: 600 !important;
     }
     
-    /* Pestaña Activa (Dorado brillante para resaltar) */
+    /* Pestaña Activa */
     button[data-baseweb="tab"][aria-selected="true"] p,
     button[data-baseweb="tab"][aria-selected="true"] span,
     div[data-testid="stTabs"] button[aria-selected="true"] p {
@@ -99,13 +99,13 @@ st.markdown(
         font-weight: 800 !important;
     }
     
-    /* Línea inferior de la pestaña activa (Dorado) */
+    /* Línea inferior de la pestaña activa */
     button[data-baseweb="tab"][aria-selected="true"],
     div[data-testid="stTabs"] button[aria-selected="true"] {
         border-bottom: 3px solid #d4af37 !important;
     }
     
-    /* 🟡 Radio Buttons (Particular, Fonasa) - AMARILLO/DORADO */
+    /* 🟡 Radio Buttons (Particular, Fonasa) */
     div[role="radiogroup"] label p, 
     div[role="radiogroup"] label span,
     div[role="radiogroup"] label div {
@@ -205,7 +205,7 @@ def es_col_incluye(c): return "incluye" in normalizar(str(c))
 def es_col_codigo(c): return "codigo" in normalizar(str(c)) or "bklab" in normalizar(str(c)) or "proactive" in normalizar(str(c))
 def es_col_nombre(c):
     cn = normalizar(str(c)).strip()
-    return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or "examen" in cn or "unnamed" in cn
+    return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or "examen" in cn or "unnamed" in cn or "descripcion" in cn
 
 # ==============================================================================
 # 📂 CARGA DE DATOS MULTI-HOJA Y DICCIONARIO
@@ -310,7 +310,7 @@ def obtener_mejor_col_nombre(f_dict):
     for c in posibles:
         if "archipielago" in normalizar(str(c)): return c, True
     for c in posibles:
-        if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)): return c, True
+        if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)) or "descripcion" in normalizar(str(c)): return c, True
     if posibles: return posibles[0], True
     
     for c in f_dict.keys():
@@ -548,7 +548,7 @@ if dict_hojas_excel is not None:
 
                         renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
 
-                    # 2. Consolidado Exámenes Barnafi + Prestaciones (LÓGICA MEJORADA)
+                    # 2. Consolidado Exámenes Barnafi + Prestaciones (LÓGICA ULTRA-ESTRICTA)
                     elif tiene_barnafi and tiene_prest:
                         fila_barnafi = next((f for f in lista_filas if "barnafi" in normalizar(str(f.get("__hoja_origen__", ""))) or "bklab" in normalizar(str(f.get("__hoja_origen__", "")))), None)
                         fila_prest = next((f for f in lista_filas if "prestac" in normalizar(str(f.get("__hoja_origen__", "")))), None)
@@ -556,29 +556,65 @@ if dict_hojas_excel is not None:
 
                         fila_consolidada = {}
 
-                        # Base: Toda la información oficial de la hoja Exámenes Barnafi
+                        # A) Título/Nombre oficial desde Barnafi
+                        col_n_b, _ = obtener_mejor_col_nombre(fila_barnafi)
+                        nombre_oficial = str(fila_barnafi.get(col_n_b, "")).strip() if col_n_b else ""
+                        if nombre_oficial:
+                            fila_consolidada["Nombre del Examen"] = nombre_oficial
+
+                        # B) Código BK desde Barnafi
                         for c, v in fila_barnafi.items():
                             if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
-                            fila_consolidada[c] = v
+                            if es_col_codigo(c):
+                                fila_consolidada[c] = v
+                                break
 
-                        # Filtrar estrictamente ÚNICAMENTE las 5 columnas solicitadas de la hoja Prestaciones
-                        columnas_permitidas_prest = ["seccion", "laboratorio de procesamiento", "contenedor", "tipo de muestra", "ayuno"]
+                        # C) Código FONASA (Barnafi o Prestaciones)
+                        cod_fonasa_barnafi = ""
+                        for c, v in fila_barnafi.items():
+                            if "fonasa" in normalizar(str(c)) and "codigo" in normalizar(str(c)) and str(v).strip() != "":
+                                cod_fonasa_barnafi = str(v).strip()
+                                break
+                        
+                        cod_fonasa_prest = ""
+                        if fila_prest:
+                            for c, v in fila_prest.items():
+                                if "fonasa" in normalizar(str(c)) and "codigo" in normalizar(str(c)) and str(v).strip() != "":
+                                    cod_fonasa_prest = str(v).strip()
+                                    break
 
-                        for c, v in fila_prest.items():
+                        if cod_fonasa_barnafi and cod_fonasa_barnafi.lower() != "no tiene":
+                            fila_consolidada["CODIGO FONASA"] = cod_fonasa_barnafi
+                        elif cod_fonasa_prest:
+                            fila_consolidada["CODIGO FONASA"] = cod_fonasa_prest
+                        elif cod_fonasa_barnafi:
+                            fila_consolidada["CODIGO FONASA"] = cod_fonasa_barnafi
+
+                        # D) Extraer ÚNICAMENTE las 5 columnas especificadas de Prestaciones
+                        columnas_prest_permitidas = ["seccion", "laboratorio de procesamiento", "contenedor", "tipo de muestra", "ayuno"]
+                        if fila_prest:
+                            for col_objetivo in columnas_prest_permitidas:
+                                for c, v in fila_prest.items():
+                                    if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
+                                    if normalizar(str(c)).strip() == col_objetivo:
+                                        fila_consolidada[c] = v
+                                        break
+
+                        # E) Resto de campos de Barnafi (Precios, Días de proceso, Hora de proceso, Tiempo de respuesta)
+                        for c, v in fila_barnafi.items():
                             if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
+                            if es_col_nombre(c) or es_col_codigo(c) or "fonasa" in normalizar(str(c)): continue
                             
                             cn = normalizar(str(c)).strip()
-                            # Verificar si la columna corresponde exactamente a alguna de las 5 permitidas
-                            if any(p in cn for p in columnas_permitidas_prest):
-                                # Evitar duplicar clave si Barnafi ya la incluía
-                                if not any(normalizar(ec).strip() == cn for ec in fila_consolidada.keys()):
-                                    fila_consolidada[c] = v
+                            if not any(normalizar(ec).strip() == cn for ec in fila_consolidada.keys()):
+                                fila_consolidada[c] = v
 
-                        # Agregar información extra de otras hojas si existieran (ej. horarios/flujos)
+                        # F) Datos adicionales de otras hojas
                         for f in filas_otras:
                             for c, v in f.items():
                                 if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col_nombre(c): continue
-                                if not any(normalizar(c).strip() == normalizar(ec).strip() for ec in fila_consolidada.keys()):
+                                cn = normalizar(str(c)).strip()
+                                if not any(normalizar(ec).strip() == cn for ec in fila_consolidada.keys()):
                                     fila_consolidada[c] = v
 
                         renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
