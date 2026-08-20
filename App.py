@@ -334,6 +334,91 @@ def es_col_categoria(c):
 # ni tratarse como datos reales del examen.
 COLUMNAS_INTERNAS = ("__hoja_origen__", "__puntaje__", "__categoria__", "__nombre_examen__", "__texto_busqueda__")
 
+def obtener_mejor_col_nombre(f_dict):
+    posibles = [c for c in f_dict.keys() if es_col_nombre(c) and c not in COLUMNAS_INTERNAS and str(f_dict[c]).strip() != "" and "sinonimo" not in normalizar(str(c))]
+    for c in posibles:
+        if "archipielago" in normalizar(str(c)): return c, True
+    for c in posibles:
+        if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)): return c, True
+    if posibles: return posibles[0], True
+
+    for c in f_dict.keys():
+        if c not in COLUMNAS_INTERNAS and str(f_dict[c]).strip() != "": return c, False
+    return None, False
+
+def _construir_alias_barnafi_prestaciones(dict_limpio, conectores):
+    """Empareja cada examen de 'Examenes barnafi (BK)' con su fila equivalente en
+    'prestaciones', incluso cuando el nombre no es idéntico (ej. 'Zinc en suero o
+    plasma' vs 'ZINC EN PLASMA'). Primero por nombre exacto (una vez normalizado);
+    lo que quede, por similitud de palabras -pero solo si hay un candidato claramente
+    mejor que el resto, para no arriesgar una fusión incorrecta entre dos exámenes
+    distintos con nombres parecidos (ej. 'Factor V' vs 'Factor V Leiden')."""
+    df_prest = next((df for n, df in dict_limpio.items() if "prestac" in normalizar(n)), None)
+    df_barn = next((df for n, df in dict_limpio.items() if "barnafi" in normalizar(n) or "bklab" in normalizar(n)), None)
+    if df_prest is None or df_barn is None:
+        return {}, {}
+
+    def clave(nombre):
+        n = normalizar(str(nombre)).strip()
+        n = re.sub(r'[^\w\s]', ' ', n)
+        return " ".join(p for p in n.split() if p and p not in conectores)
+
+    claves_prest = set()
+    for _, fila in df_prest.iterrows():
+        fd = fila.to_dict()
+        col_n, _ = obtener_mejor_col_nombre(fd)
+        if col_n:
+            c = clave(fd[col_n])
+            if c: claves_prest.add(c)
+
+    barnafi_filas = []
+    for _, fila in df_barn.iterrows():
+        fd = fila.to_dict()
+        col_n, _ = obtener_mejor_col_nombre(fd)
+        if col_n:
+            c = clave(fd[col_n])
+            if c: barnafi_filas.append((c, fd))
+
+    restantes = set(claves_prest)
+    alias_barnafi_a_prest = {}
+    barnafi_por_clave_prest = {}
+    pendientes = []
+    for c, fd in barnafi_filas:
+        if c in restantes:
+            alias_barnafi_a_prest[c] = c
+            barnafi_por_clave_prest[c] = fd
+            restantes.discard(c)
+        else:
+            pendientes.append((c, fd))
+
+    # Respaldo por similitud: solo si hay un único candidato claramente mejor que el
+    # resto (subconjunto de palabras + comparten la primera palabra, que normalmente
+    # es el nombre del analito -evita coincidir con filas basura del Excel como
+    # "EN ORINA AISLADA" que no traen el nombre del examen-).
+    for c, fd in pendientes:
+        palabras_b = set(c.split())
+        primera = c.split()[0] if c else None
+        if not primera: continue
+        mejor, mejor_score, segundo_score = None, 0.0, 0.0
+        for cp in restantes:
+            palabras_p = set(cp.split())
+            if primera not in palabras_p: continue
+            if not (palabras_b.issubset(palabras_p) or palabras_p.issubset(palabras_b)): continue
+            inter = len(palabras_b & palabras_p); union = len(palabras_b | palabras_p)
+            score = inter / union if union else 0
+            if score > mejor_score:
+                segundo_score = mejor_score
+                mejor_score = score
+                mejor = cp
+            elif score > segundo_score:
+                segundo_score = score
+        if mejor and mejor_score >= 0.55 and (mejor_score - segundo_score) >= 0.15:
+            alias_barnafi_a_prest[c] = mejor
+            barnafi_por_clave_prest[mejor] = fd
+            restantes.discard(mejor)
+
+    return alias_barnafi_a_prest, barnafi_por_clave_prest
+
 # ==============================================================================
 # 📂 CARGA DE DATOS MULTI-HOJA Y DICCIONARIO
 # ==============================================================================
@@ -461,12 +546,14 @@ def cargar_hojas_y_diccionario(_version):
 
         lista_autocomplete = sorted({n for n in df_todas['__nombre_examen__'] if n and len(n) > 2})
 
-        return dict_limpio, diccionario, df_todas, lista_autocomplete
+        alias_barnafi_a_prest, barnafi_por_clave_prest = _construir_alias_barnafi_prestaciones(dict_limpio, diccionario["conectores"])
+
+        return dict_limpio, diccionario, df_todas, lista_autocomplete, alias_barnafi_a_prest, barnafi_por_clave_prest
     except Exception as e:
         st.session_state["_error_carga_datos"] = str(e)
-        return None, None, None, None
+        return None, None, None, None, {}, {}
 
-dict_hojas_excel, diccionario_virtual, df_todas_las_hojas_cache, lista_autocomplete = cargar_hojas_y_diccionario(_version_datos)
+dict_hojas_excel, diccionario_virtual, df_todas_las_hojas_cache, lista_autocomplete, alias_barnafi_a_prest, barnafi_por_clave_prest = cargar_hojas_y_diccionario(_version_datos)
 
 # ==============================================================================
 # 🛠️ FUNCIONES DE CÁLCULO Y AGRUPACIÓN
@@ -523,18 +610,6 @@ def generar_pdf_cotizacion(items, total, tipo_pago, usuario):
     pdf.set_x(pdf.l_margin)
     pdf.multi_cell(0, 10, _texto_latin1_seguro(f"TOTAL {tipo_pago.upper()}: {formatear_pesos(total)}"))
     return bytes(pdf.output())
-
-def obtener_mejor_col_nombre(f_dict):
-    posibles = [c for c in f_dict.keys() if es_col_nombre(c) and c not in COLUMNAS_INTERNAS and str(f_dict[c]).strip() != "" and "sinonimo" not in normalizar(str(c))]
-    for c in posibles:
-        if "archipielago" in normalizar(str(c)): return c, True
-    for c in posibles:
-        if "nombre" in normalizar(str(c)) or "prestacion" in normalizar(str(c)): return c, True
-    if posibles: return posibles[0], True
-
-    for c in f_dict.keys():
-        if c not in COLUMNAS_INTERNAS and str(f_dict[c]).strip() != "": return c, False
-    return None, False
 
 def normalizar_nombre_agrupacion(nombre):
     n = normalizar(str(nombre)).strip()
@@ -852,6 +927,13 @@ if dict_hojas_excel is not None:
 
                     n_val = str(f_dict[col_n]).strip() if col_n else ""
                     n_norm = normalizar_nombre_agrupacion(n_val)
+                    hoja_origen_fila = normalizar(str(f_dict.get("__hoja_origen__", "")))
+                    if "barnafi" in hoja_origen_fila or "bklab" in hoja_origen_fila:
+                        # Agrupa usando el nombre de 'prestaciones' equivalente (si existe),
+                        # aunque el nombre en Barnafi esté redactado distinto (ver
+                        # _construir_alias_barnafi_prestaciones) -así se fusionan en una
+                        # sola tarjeta en vez de mostrarse por separado.
+                        n_norm = alias_barnafi_a_prest.get(n_norm, n_norm)
                     if n_norm not in examenes_agrupados: examenes_agrupados[n_norm] = {'filas': [], 'puntaje': f_dict['__puntaje__']}
                     examenes_agrupados[n_norm]['filas'].append(f_dict)
 
@@ -949,22 +1031,10 @@ if dict_hojas_excel is not None:
                 nombre_completo = str(fila[col_n]) if col_n else ""
                 nombres_cortos_prestaciones.append(normalizar(acortar_nombre_examen(nombre_completo)))
 
-            # Índice de exámenes derivados a Barnafi (BK), por nombre normalizado, para
-            # poder fusionar el nombre igual que en el Buscador (misma prestación, no
-            # duplicarla). No se usa el código FONASA como llave porque en la práctica
-            # muchos exámenes derivados a BK no traen ese código en ninguna de las dos hojas.
-            df_barnafi = None
-            for nombre_hoja, df in dict_hojas_excel.items():
-                if "barnafi" in normalizar(nombre_hoja) or "bklab" in normalizar(nombre_hoja): df_barnafi = df; break
-
-            barnafi_por_nombre = {}
-            if df_barnafi is not None:
-                for _, fila_b in df_barnafi.iterrows():
-                    fila_b_dict = fila_b.to_dict()
-                    col_nb, _ = obtener_mejor_col_nombre(fila_b_dict)
-                    if col_nb:
-                        clave = normalizar_nombre_agrupacion(str(fila_b_dict[col_nb]))
-                        if clave: barnafi_por_nombre[clave] = fila_b_dict
+            # barnafi_por_clave_prest ya viene precalculado desde cargar_hojas_y_diccionario
+            # (ver _construir_alias_barnafi_prestaciones): mapea el nombre normalizado de
+            # 'prestaciones' a su fila equivalente en Barnafi, misma lógica que usa el
+            # Buscador para fusionar tarjetas sin duplicar.
 
             st.markdown('<div class="cotizador-box">', unsafe_allow_html=True)
 
@@ -1019,8 +1089,8 @@ if dict_hojas_excel is not None:
                     col_n_prest, _ = obtener_mejor_col_nombre(fila_para_nombre)
                     if col_n_prest:
                         clave_prest = normalizar_nombre_agrupacion(str(fila_para_nombre[col_n_prest]))
-                        if clave_prest in barnafi_por_nombre:
-                            fila_para_nombre = fusionar_prestacion_y_barnafi(mejor_fila, barnafi_por_nombre[clave_prest])
+                        if clave_prest in barnafi_por_clave_prest:
+                            fila_para_nombre = fusionar_prestacion_y_barnafi(mejor_fila, barnafi_por_clave_prest[clave_prest])
 
                     col_nombre_real, _ = obtener_mejor_col_nombre(fila_para_nombre)
                     nombre_real = str(fila_para_nombre.get(col_nombre_real, "")).strip() if col_nombre_real else ""
