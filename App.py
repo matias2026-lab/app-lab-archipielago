@@ -334,6 +334,62 @@ def verificar_es_sin_prep(nombre_test):
             if term in norm: return True
     return False
 
+def obtener_codigo_fonasa_limpio(f_dict):
+    for c, v in f_dict.items():
+        cn = normalizar(str(c))
+        if "fonasa" in cn and "codigo" in cn:
+            s = re.sub(r'\D', '', str(v))
+            if s:
+                return s.lstrip('0')
+    return ""
+
+def obtener_codigo_bk_limpio(f_dict):
+    for c, v in f_dict.items():
+        cn = normalizar(str(c))
+        if "bk" in cn or "proactive" in cn:
+            s = str(v).strip().upper()
+            if s and s != "NO TIENE":
+                return s
+    return ""
+
+def son_mismo_examen(f1, f2):
+    # No agrupar filas que pertenecen a la misma hoja
+    if str(f1.get("__hoja_origen__", "")).strip().lower() == str(f2.get("__hoja_origen__", "")).strip().lower():
+        return False
+
+    # 1. Chequeo por Código FONASA (ej. 302080 vs 0302080)
+    cod_f1 = obtener_codigo_fonasa_limpio(f1)
+    cod_f2 = obtener_codigo_fonasa_limpio(f2)
+    if cod_f1 and cod_f2 and cod_f1 == cod_f2:
+        return True
+        
+    # 2. Chequeo por Código BK / Proactive
+    bk1 = obtener_codigo_bk_limpio(f1)
+    bk2 = obtener_codigo_bk_limpio(f2)
+    if bk1 and bk2 and bk1 == bk2:
+        return True
+
+    # 3. Chequeo por Nombre (normalizado sin espacios y con inclusión)
+    col_n1, _ = obtener_mejor_col_nombre(f1)
+    col_n2, _ = obtener_mejor_col_nombre(f2)
+    nom1 = normalizar_nombre_agrupacion(str(f1.get(col_n1, ""))) if col_n1 else ""
+    nom2 = normalizar_nombre_agrupacion(str(f2.get(col_n2, ""))) if col_n2 else ""
+
+    if nom1 and nom2:
+        if nom1 == nom2:
+            return True
+        
+        # Comparación sin espacios
+        s1 = nom1.replace(" ", "")
+        s2 = nom2.replace(" ", "")
+        if s1 == s2:
+            return True
+            
+        if (s1 in s2 or s2 in s1) and len(min(s1, s2, key=len)) >= 4:
+            return True
+
+    return False
+
 # ==============================================================================
 # 🎨 RENDERIZADOR GRÁFICO DE TARJETAS
 # ==============================================================================
@@ -400,7 +456,7 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
 
         if val_str_nombre != "":
             cn_final = normalizar(str(col_nombre_final)).strip()
-            es_titulo_limpio = (not es_nombre_oficial or cn_final == "" or "unnamed" in cn_final or "tema" in cn_final or "examen" == cn_final)
+            es_titulo_limpio = (not es_nombre_oficial or cn_final == "" or "unnamed" in cn_final or "tema" in cn_final or "examen" == cn_final or "nombre" in cn_final or "descripcion" in cn_final)
             
             if es_titulo_limpio:
                 contenido_tarjeta += f'<div class="row-item" style="margin-bottom: 12px; border-bottom: 2px solid #d4af37; padding-bottom: 8px;"><span class="col-val" style="font-size: 1.15em; font-weight: 800; color: #1a1a1a; text-transform: uppercase;">{val_str_nombre}</span></div>'
@@ -493,17 +549,26 @@ if dict_hojas_excel is not None:
                 df_resultados = df_resultados.sort_values('__puntaje__')
                 resultados_mostrar = df_resultados.head(150)
 
-                examenes_agrupados = {}
+                # Agrupamiento inteligente multi-criterio
+                grupos = []
                 for _, fila in resultados_mostrar.iterrows():
                     f_dict = fila.to_dict()
-                    col_n, _ = obtener_mejor_col_nombre(f_dict)
+                    puntaje = f_dict['__puntaje__']
                     
-                    n_val = str(f_dict[col_n]).strip() if col_n else ""
-                    n_norm = normalizar_nombre_agrupacion(n_val)
-                    if n_norm not in examenes_agrupados: examenes_agrupados[n_norm] = {'filas': [], 'puntaje': f_dict['__puntaje__']}
-                    examenes_agrupados[n_norm]['filas'].append(f_dict)
-                
-                grupos_ordenados = sorted(examenes_agrupados.values(), key=lambda x: x['puntaje'])
+                    grupo_encontrado = None
+                    for g in grupos:
+                        if any(son_mismo_examen(f_dict, f_exist) for f_exist in g['filas']):
+                            grupo_encontrado = g
+                            break
+                            
+                    if grupo_encontrado:
+                        grupo_encontrado['filas'].append(f_dict)
+                        if puntaje < grupo_encontrado['puntaje']:
+                            grupo_encontrado['puntaje'] = puntaje
+                    else:
+                        grupos.append({'filas': [f_dict], 'puntaje': puntaje})
+
+                grupos_ordenados = sorted(grupos, key=lambda x: x['puntaje'])
                 
                 for grupo in grupos_ordenados:
                     lista_filas = grupo['filas']
@@ -548,7 +613,7 @@ if dict_hojas_excel is not None:
 
                         renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
 
-                    # 2. Consolidado Exámenes Barnafi + Prestaciones (LÓGICA ULTRA-ESTRICTA)
+                    # 2. Consolidado Exámenes Barnafi + Prestaciones
                     elif tiene_barnafi and tiene_prest:
                         fila_barnafi = next((f for f in lista_filas if "barnafi" in normalizar(str(f.get("__hoja_origen__", ""))) or "bklab" in normalizar(str(f.get("__hoja_origen__", "")))), None)
                         fila_prest = next((f for f in lista_filas if "prestac" in normalizar(str(f.get("__hoja_origen__", "")))), None)
@@ -560,7 +625,8 @@ if dict_hojas_excel is not None:
                         col_n_b, _ = obtener_mejor_col_nombre(fila_barnafi)
                         nombre_oficial = str(fila_barnafi.get(col_n_b, "")).strip() if col_n_b else ""
                         if nombre_oficial:
-                            fila_consolidada["Nombre del Examen"] = nombre_oficial
+                            col_titulo = col_n_b if col_n_b else "Descripción a la lista de precios"
+                            fila_consolidada[col_titulo] = nombre_oficial
 
                         # B) Código BK desde Barnafi
                         for c, v in fila_barnafi.items():
@@ -600,7 +666,7 @@ if dict_hojas_excel is not None:
                                         fila_consolidada[c] = v
                                         break
 
-                        # E) Resto de campos de Barnafi (Precios, Días de proceso, Hora de proceso, Tiempo de respuesta)
+                        # E) Resto de campos de Barnafi (Precios 2026, Días de proceso, Hora de proceso, Tiempo de respuesta)
                         for c, v in fila_barnafi.items():
                             if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
                             if es_col_nombre(c) or es_col_codigo(c) or "fonasa" in normalizar(str(c)): continue
@@ -609,7 +675,7 @@ if dict_hojas_excel is not None:
                             if not any(normalizar(ec).strip() == cn for ec in fila_consolidada.keys()):
                                 fila_consolidada[c] = v
 
-                        # F) Datos adicionales de otras hojas
+                        # F) Datos adicionales de otras hojas (ej. Horarios y Flujos)
                         for f in filas_otras:
                             for c, v in f.items():
                                 if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col_nombre(c): continue
