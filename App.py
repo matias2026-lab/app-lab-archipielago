@@ -195,22 +195,32 @@ def limpiar_texto_clave(txt):
   s = re.sub(r'[^\w\s]', '', s)
   return re.sub(r'\s+', ' ', s).strip()
 
+def normalizar_clave_columna(txt):
+  s = limpiar_texto_clave(txt)
+  s = re.sub(r'\bdia\b', 'dias', s)
+  s = re.sub(r'\bcodigos\b', 'codigo', s)
+  s = re.sub(r'\bprecios\b', 'precio', s)
+  s = re.sub(r'\bvalores\b', 'valor', s)
+  return s
+
 def es_columna_precio_fonasa(col_name):
-    c = limpiar_texto_clave(str(col_name))
+    c = normalizar_clave_columna(str(col_name))
     return "copago fonasa 2026" in c or ("copago" in c and "fonasa" in c and "2026" in c)
 def es_columna_precio_particular(col_name):
-    c = limpiar_texto_clave(str(col_name))
+    c = normalizar_clave_columna(str(col_name))
     return "valor particular 2026" in c or ("valor" in c and "particular" in c and "2026" in c)
 def es_col_precio(c):
-    cn = limpiar_texto_clave(str(c))
+    cn = normalizar_clave_columna(str(c))
     return es_columna_precio_fonasa(c) or es_columna_precio_particular(c) or "valor" in cn or "precio" in cn or "arancel" in cn
-def es_col_tiempo(c): return "tiempo" in limpiar_texto_clave(str(c)) or "respuesta" in limpiar_texto_clave(str(c)) or "dias" in limpiar_texto_clave(str(c))
-def es_col_contenedor(c): return "contenedor" in limpiar_texto_clave(str(c)) or "transporte" in limpiar_texto_clave(str(c)) or "tubo" in limpiar_texto_clave(str(c))
-def es_col_muestra(c): return "tipo" in limpiar_texto_clave(str(c)) or "muestra" in limpiar_texto_clave(str(c))
-def es_col_incluye(c): return "incluye" in limpiar_texto_clave(str(c))
-def es_col_codigo(c): return "codigo" in limpiar_texto_clave(str(c)) or "bklab" in limpiar_texto_clave(str(c)) or "proactive" in limpiar_texto_clave(str(c))
+def es_col_tiempo(c):
+    cn = normalizar_clave_columna(str(c))
+    return "tiempo" in cn or "respuesta" in cn or "dias" in cn or "proceso" in cn
+def es_col_contenedor(c): return "contenedor" in normalizar_clave_columna(str(c)) or "transporte" in normalizar_clave_columna(str(c)) or "tubo" in normalizar_clave_columna(str(c))
+def es_col_muestra(c): return "tipo" in normalizar_clave_columna(str(c)) or "muestra" in normalizar_clave_columna(str(c))
+def es_col_incluye(c): return "incluye" in normalizar_clave_columna(str(c))
+def es_col_codigo(c): return "codigo" in normalizar_clave_columna(str(c)) or "bklab" in normalizar_clave_columna(str(c)) or "proactive" in normalizar_clave_columna(str(c))
 def es_col_nombre(c):
-    cn = limpiar_texto_clave(str(c))
+    cn = normalizar_clave_columna(str(c))
     return "archipielago" in cn or "nombre" in cn or "prestacion" in cn or "examen" in cn or "unnamed" in cn or "descripcion" in cn
 
 # ==============================================================================
@@ -341,7 +351,7 @@ def verificar_es_sin_prep(nombre_test):
 
 def obtener_codigo_fonasa_limpio(f_dict):
     for c, v in f_dict.items():
-        cn = limpiar_texto_clave(str(c))
+        cn = normalizar_clave_columna(str(c))
         if "fonasa" in cn and "codigo" in cn:
             s = re.sub(r'\D', '', str(v))
             if s:
@@ -350,7 +360,7 @@ def obtener_codigo_fonasa_limpio(f_dict):
 
 def obtener_codigo_bk_limpio(f_dict):
     for c, v in f_dict.items():
-        cn = limpiar_texto_clave(str(c))
+        cn = normalizar_clave_columna(str(c))
         if "bk" in cn or "proactive" in cn:
             s = str(v).strip().upper()
             if s and s != "NO TIENE":
@@ -663,10 +673,10 @@ if dict_hojas_excel is not None:
                                 fila_consolidada[c] = v
                                 break
 
-                        # C) Código FONASA (Barnafi o Prestaciones)
+                        # C) Código FONASA (Barnafi o Prestaciones) - Sin Duplicaciones
                         cod_fonasa_barnafi = ""
                         for c, v in fila_barnafi.items():
-                            cn = limpiar_texto_clave(str(c))
+                            cn = normalizar_clave_columna(str(c))
                             if "fonasa" in cn and "codigo" in cn and str(v).strip() != "":
                                 cod_fonasa_barnafi = str(v).strip()
                                 break
@@ -674,7 +684,7 @@ if dict_hojas_excel is not None:
                         cod_fonasa_prest = ""
                         if fila_prest:
                             for c, v in fila_prest.items():
-                                cn = limpiar_texto_clave(str(c))
+                                cn = normalizar_clave_columna(str(c))
                                 if "fonasa" in cn and "codigo" in cn and str(v).strip() != "":
                                     cod_fonasa_prest = str(v).strip()
                                     break
@@ -692,25 +702,25 @@ if dict_hojas_excel is not None:
                             for col_objetivo in columnas_prest_permitidas:
                                 for c, v in fila_prest.items():
                                     if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
-                                    if limpiar_texto_clave(str(c)) == col_objetivo:
+                                    if normalizar_clave_columna(str(c)) == col_objetivo:
                                         fila_consolidada[c] = v
                                         break
 
                         # E) Resto de campos de Barnafi (Precios 2026, Días de proceso, Hora de proceso, Tiempo de respuesta)
                         for c, v in fila_barnafi.items():
                             if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "": continue
-                            if es_col_nombre(c) or es_col_codigo(c) or "fonasa" in limpiar_texto_clave(str(c)): continue
+                            if es_col_nombre(c) or es_col_codigo(c) or "fonasa" in normalizar_clave_columna(str(c)): continue
                             
-                            cn = limpiar_texto_clave(str(c))
-                            if not any(limpiar_texto_clave(ec) == cn for ec in fila_consolidada.keys()):
+                            cn = normalizar_clave_columna(str(c))
+                            if not any(normalizar_clave_columna(ec) == cn for ec in fila_consolidada.keys()):
                                 fila_consolidada[c] = v
 
                         # F) Datos adicionales de otras hojas (ej. Horarios y Flujos)
                         for f in filas_otras:
                             for c, v in f.items():
-                                if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col_nombre(c) or es_col_codigo(c) or "fonasa" in limpiar_texto_clave(str(c)): continue
-                                cn = limpiar_texto_clave(str(c))
-                                if not any(limpiar_texto_clave(ec) == cn for ec in fila_consolidada.keys()):
+                                if c == "__hoja_origen__" or c == "__puntaje__" or str(v).strip() == "" or es_col_nombre(c) or es_col_codigo(c) or "fonasa" in normalizar_clave_columna(str(c)): continue
+                                cn = normalizar_clave_columna(str(c))
+                                if not any(normalizar_clave_columna(ec) == cn for ec in fila_consolidada.keys()):
                                     fila_consolidada[c] = v
 
                         renderizar_tarjeta(fila_consolidada, palabras, palabras_filtro)
