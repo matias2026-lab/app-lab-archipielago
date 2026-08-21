@@ -313,6 +313,17 @@ st.markdown(
         background-color: var(--burdeo-oscuro) !important;
         border: 1px solid rgba(200,162,74,0.45) !important;
     }
+    [data-testid="stPopoverBody"] [data-testid="stVerticalBlock"] { gap: 0.6rem !important; }
+    [data-testid="stPopoverBody"] p,
+    [data-testid="stPopoverBody"] span,
+    [data-testid="stPopoverBody"] label,
+    [data-testid="stPopoverBody"] textarea {
+        color: rgba(244,236,230,0.95) !important;
+    }
+    [data-testid="stPopoverBody"] hr {
+        border-color: rgba(200,162,74,0.4) !important;
+        margin: 4px 0 !important;
+    }
 
     /* Alertas (success / warning / error / info) coherentes con la paleta */
     div[data-testid="stAlert"] { border-radius: 12px !important; border: none !important; box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
@@ -336,13 +347,12 @@ if st.session_state.autenticado:
     col_menu, col_espacio = st.columns([0.15, 0.85])
     with col_menu:
         with st.popover("☰", use_container_width=True, help="Más opciones"):
-            if st.button("🔄 Actualizar datos", use_container_width=True, help="Vuelve a leer el Excel desde disco (usar si se editaron precios o exámenes)."):
+            if st.button("Actualizar datos", use_container_width=True, help="Vuelve a leer el Excel desde disco (usar si se editaron precios o exámenes)."):
                 st.cache_data.clear()
                 st.success("Datos actualizados.")
                 st.rerun()
 
-            st.markdown("---")
-            st.markdown("**📢 Aviso de tiempos de respuesta / envíos**")
+            st.markdown("**Aviso de tiempos de respuesta / envíos**")
             aviso_actual_menu = leer_aviso()
             nuevo_aviso = st.text_area(
                 "Mensaje visible para todo el equipo",
