@@ -340,6 +340,33 @@ if st.session_state.autenticado:
                 st.cache_data.clear()
                 st.success("Datos actualizados.")
                 st.rerun()
+
+            st.markdown("---")
+            st.markdown("**📢 Aviso de tiempos de respuesta / envíos**")
+            aviso_actual_menu = leer_aviso()
+            nuevo_aviso = st.text_area(
+                "Mensaje visible para todo el equipo",
+                value=aviso_actual_menu.get("mensaje", "") if aviso_actual_menu else "",
+                placeholder="Ej: Tiempo extendido para Hormonas y Coagulación hasta el martes 7 de julio.",
+                key="input_aviso",
+                label_visibility="collapsed",
+            )
+            col_guardar_aviso, col_borrar_aviso = st.columns(2)
+            with col_guardar_aviso:
+                if st.button("Guardar aviso", use_container_width=True, type="primary", key="btn_guardar_aviso"):
+                    if nuevo_aviso.strip():
+                        guardar_aviso(nuevo_aviso.strip(), st.session_state.usuario_actual)
+                        st.rerun()
+                    else:
+                        st.warning("Escribe un mensaje antes de guardar.")
+            with col_borrar_aviso:
+                if st.button("Borrar aviso", use_container_width=True, key="btn_borrar_aviso"):
+                    borrar_aviso(st.session_state.usuario_actual)
+                    st.rerun()
+            if aviso_actual_menu:
+                st.caption(f"Actualizado por {aviso_actual_menu.get('usuario','?')} · {aviso_actual_menu.get('fecha','?')}")
+
+            st.markdown("---")
             if st.button("Cerrar Sesión", use_container_width=True):
                 st.session_state.autenticado = False
                 st.session_state.usuario_actual = ""
@@ -914,33 +941,11 @@ if dict_hojas_excel is not None:
                     st.caption(f"{ts} · {usuario} · {etiqueta}")
                     if detalle: st.caption(f"　{detalle}")
 
-    # El editor del aviso va en la pantalla principal (no en la barra lateral) porque
-    # esa barra queda colapsada por defecto en muchas pantallas y nadie la encontraba.
+    # El aviso ahora se edita desde el menú "☰" de arriba; acá solo se muestra
+    # el mensaje vigente, en el mismo lugar de siempre.
     aviso_actual = leer_aviso()
     if aviso_actual and aviso_actual.get("mensaje", "").strip():
         st.markdown(f'<div class="aviso-banner">{aviso_actual["mensaje"]}</div>', unsafe_allow_html=True)
-
-    with st.expander("Editar aviso de tiempos de respuesta / envíos"):
-        nuevo_aviso = st.text_area(
-            "Mensaje visible para todo el equipo",
-            value=aviso_actual.get("mensaje", "") if aviso_actual else "",
-            placeholder="Ej: Tiempo extendido para Hormonas y Coagulación hasta el martes 7 de julio.",
-            key="input_aviso",
-        )
-        col_guardar_aviso, col_borrar_aviso = st.columns(2)
-        with col_guardar_aviso:
-            if st.button("Guardar aviso", use_container_width=True, type="primary", key="btn_guardar_aviso"):
-                if nuevo_aviso.strip():
-                    guardar_aviso(nuevo_aviso.strip(), st.session_state.usuario_actual)
-                    st.rerun()
-                else:
-                    st.warning("Escribe un mensaje antes de guardar.")
-        with col_borrar_aviso:
-            if st.button("Borrar aviso", use_container_width=True, key="btn_borrar_aviso"):
-                borrar_aviso(st.session_state.usuario_actual)
-                st.rerun()
-        if aviso_actual:
-            st.caption(f"Actualizado por {aviso_actual.get('usuario','?')} · {aviso_actual.get('fecha','?')}")
 
     tab_buscador, tab_cotizador = st.tabs(["Buscador de Exámenes", "Cotizador Múltiple"])
 
