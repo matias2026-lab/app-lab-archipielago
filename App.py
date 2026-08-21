@@ -302,16 +302,18 @@ st.markdown(
     }
     [data-testid="stExpander"] summary:hover { color: var(--dorado-claro) !important; }
 
-    /* Menú "☰" (Actualizar datos / Cerrar Sesión) */
+    /* Menú "☰" (Actualizar datos / Cerrar Sesión) — botón disparador, estilo ícono plano */
     [data-testid="stPopoverButton"] {
-        background-color: rgba(255,255,255,0.04) !important; color: #ffffff !important;
-        border: 1px solid rgba(244,236,230,0.28) !important; border-radius: 9px !important;
-        font-size: 17px !important; box-shadow: none !important;
+        background-color: transparent !important; color: rgba(244,236,230,0.85) !important;
+        border: none !important; border-radius: 9px !important;
+        font-size: 17px !important; box-shadow: none !important; transition: all 0.15s ease;
     }
-    [data-testid="stPopoverButton"]:hover { border-color: var(--dorado) !important; color: var(--dorado-claro) !important; }
+    [data-testid="stPopoverButton"]:hover { background-color: rgba(255,255,255,0.06) !important; color: var(--dorado-claro) !important; }
     [data-testid="stPopoverBody"] {
         background-color: var(--burdeo-oscuro) !important;
-        border: 1px solid rgba(200,162,74,0.45) !important;
+        border: 1px solid rgba(200,162,74,0.3) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 14px 32px rgba(0,0,0,0.35) !important;
     }
     [data-testid="stPopoverBody"] [data-testid="stVerticalBlock"] { gap: 0.6rem !important; }
     [data-testid="stPopoverBody"] p,
@@ -321,8 +323,29 @@ st.markdown(
         color: rgba(244,236,230,0.95) !important;
     }
     [data-testid="stPopoverBody"] hr {
-        border-color: rgba(200,162,74,0.4) !important;
+        border-color: rgba(244,236,230,0.14) !important;
         margin: 4px 0 !important;
+    }
+    /* Botones del menú ☰ (Actualizar datos / Cerrar Sesión): estilo de ítem de lista, sin recuadro */
+    [data-testid="stPopoverBody"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] {
+        background-color: transparent !important; border: none !important; text-align: left !important;
+        justify-content: flex-start !important; padding: 8px 6px !important; font-weight: 600 !important;
+    }
+    [data-testid="stPopoverBody"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"]:hover {
+        background-color: rgba(255,255,255,0.06) !important; color: var(--dorado-claro) !important;
+    }
+    /* Editor de mensaje (expander) anidado en el menú ☰: sin recuadro propio */
+    [data-testid="stPopoverBody"] [data-testid="stExpander"] {
+        background-color: transparent !important; border: none !important; margin-bottom: 4px !important;
+    }
+    [data-testid="stPopoverBody"] [data-testid="stExpander"] summary { padding: 8px 6px !important; }
+    /* Excepción: "Borrar aviso" (dentro del editor) conserva look de botón real, no de ítem de menú */
+    [data-testid="stPopoverBody"] [data-testid="stExpander"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] {
+        background-color: rgba(255,255,255,0.04) !important; border: 1px solid rgba(244,236,230,0.28) !important;
+        text-align: center !important; justify-content: center !important; padding: 9px 14px !important;
+    }
+    [data-testid="stPopoverBody"] [data-testid="stExpander"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"]:hover {
+        border-color: var(--dorado) !important; background-color: rgba(200,162,74,0.10) !important;
     }
 
     /* Alertas (success / warning / error / info) coherentes con la paleta */
