@@ -252,6 +252,16 @@ st.markdown(
         box-shadow: 0 0 0 3px rgba(200,162,74,0.45), 0 6px 16px rgba(0,0,0,0.22) !important;
     }
 
+    /* Cuadros de texto largos (ej. editor del aviso) - mismo tratamiento que los inputs */
+    textarea {
+        color: #1a1a1a !important;
+        -webkit-text-fill-color: #1a1a1a !important;
+        caret-color: var(--burdeo) !important;
+        background-color: #ffffff !important;
+        border-radius: 14px !important;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.22) !important;
+    }
+
     /* Filtro de categoría (multiselect) */
     div[data-baseweb="select"] > div, div[data-testid="stMultiSelect"] [data-baseweb="select"] {
         background-color: #ffffff !important; border-radius: 14px !important; border: none !important;
@@ -901,9 +911,9 @@ if dict_hojas_excel is not None:
     # esa barra queda colapsada por defecto en muchas pantallas y nadie la encontraba.
     aviso_actual = leer_aviso()
     if aviso_actual and aviso_actual.get("mensaje", "").strip():
-        st.markdown(f'<div class="aviso-banner">📢 {aviso_actual["mensaje"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="aviso-banner">{aviso_actual["mensaje"]}</div>', unsafe_allow_html=True)
 
-    with st.expander("📢 Editar aviso de tiempos de respuesta / envíos"):
+    with st.expander("Editar aviso de tiempos de respuesta / envíos"):
         nuevo_aviso = st.text_area(
             "Mensaje visible para todo el equipo",
             value=aviso_actual.get("mensaje", "") if aviso_actual else "",
