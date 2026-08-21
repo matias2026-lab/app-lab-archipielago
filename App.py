@@ -356,6 +356,29 @@ st.markdown(
     section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span, section[data-testid="stSidebar"] label {
         color: rgba(244,236,230,0.85) !important;
     }
+
+    /* Celular: en pantallas angostas Streamlit apila las columnas y todo se ve
+       agrandado (el logo, el título y el menú ☰ terminan estirados a lo ancho
+       y su contenido queda centrado). Se compactan proporciones sin tocar la web. */
+    @media (max-width: 640px) {
+        .app-logo img { width: 64px !important; }
+        .title-text { font-size: 1.3rem !important; }
+        .header-divider { margin-bottom: 16px !important; }
+
+        [data-testid="stPopoverButton"] {
+            width: auto !important; min-width: 0 !important;
+            justify-content: flex-start !important; text-align: left !important;
+            padding: 6px 10px !important; margin-right: auto !important;
+        }
+
+        [role="tablist"] { gap: 16px !important; }
+        div[data-testid="stTab"] p { font-size: 14px !important; }
+
+        [data-testid="stExpander"] summary { font-size: 13px !important; }
+        div[data-testid="stTextInputRootElement"] input, div[data-baseweb="input"] input, div[data-baseweb="base-input"] input {
+            font-size: 15px !important;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
