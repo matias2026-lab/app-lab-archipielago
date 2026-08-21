@@ -284,6 +284,18 @@ st.markdown(
         box-shadow: 0 6px 16px rgba(0,0,0,0.18);
     }
 
+    /* Expanders en la pantalla principal (ej. editor del aviso) - bien visibles */
+    [data-testid="stExpander"] {
+        background-color: rgba(255,255,255,0.05) !important;
+        border: 1px solid rgba(200,162,74,0.45) !important;
+        border-radius: 12px !important;
+        margin-bottom: 18px !important;
+    }
+    [data-testid="stExpander"] summary {
+        color: #ffffff !important; font-weight: 700 !important; font-size: 14.5px !important;
+    }
+    [data-testid="stExpander"] summary:hover { color: var(--dorado-claro) !important; }
+
     /* Alertas (success / warning / error / info) coherentes con la paleta */
     div[data-testid="stAlert"] { border-radius: 12px !important; border: none !important; box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
 
@@ -885,32 +897,33 @@ if dict_hojas_excel is not None:
                     st.caption(f"{ts} · {usuario} · {etiqueta}")
                     if detalle: st.caption(f"　{detalle}")
 
-        aviso_actual = leer_aviso()
-        with st.expander("📢 Aviso de tiempos de respuesta"):
-            nuevo_aviso = st.text_area(
-                "Mensaje visible para todo el equipo",
-                value=aviso_actual.get("mensaje", "") if aviso_actual else "",
-                placeholder="Ej: Tiempo extendido para Hormonas y Coagulación hasta el martes 7 de julio.",
-                key="input_aviso",
-            )
-            col_guardar_aviso, col_borrar_aviso = st.columns(2)
-            with col_guardar_aviso:
-                if st.button("Guardar", use_container_width=True, type="primary", key="btn_guardar_aviso"):
-                    if nuevo_aviso.strip():
-                        guardar_aviso(nuevo_aviso.strip(), st.session_state.usuario_actual)
-                        st.rerun()
-                    else:
-                        st.warning("Escribe un mensaje antes de guardar.")
-            with col_borrar_aviso:
-                if st.button("Borrar aviso", use_container_width=True, key="btn_borrar_aviso"):
-                    borrar_aviso(st.session_state.usuario_actual)
-                    st.rerun()
-            if aviso_actual:
-                st.caption(f"Actualizado por {aviso_actual.get('usuario','?')} · {aviso_actual.get('fecha','?')}")
+    # El editor del aviso va en la pantalla principal (no en la barra lateral) porque
+    # esa barra queda colapsada por defecto en muchas pantallas y nadie la encontraba.
+    aviso_actual = leer_aviso()
+    if aviso_actual and aviso_actual.get("mensaje", "").strip():
+        st.markdown(f'<div class="aviso-banner">📢 {aviso_actual["mensaje"]}</div>', unsafe_allow_html=True)
 
-    aviso_banner = leer_aviso()
-    if aviso_banner and aviso_banner.get("mensaje", "").strip():
-        st.markdown(f'<div class="aviso-banner">📢 {aviso_banner["mensaje"]}</div>', unsafe_allow_html=True)
+    with st.expander("📢 Editar aviso de tiempos de respuesta / envíos"):
+        nuevo_aviso = st.text_area(
+            "Mensaje visible para todo el equipo",
+            value=aviso_actual.get("mensaje", "") if aviso_actual else "",
+            placeholder="Ej: Tiempo extendido para Hormonas y Coagulación hasta el martes 7 de julio.",
+            key="input_aviso",
+        )
+        col_guardar_aviso, col_borrar_aviso = st.columns(2)
+        with col_guardar_aviso:
+            if st.button("Guardar aviso", use_container_width=True, type="primary", key="btn_guardar_aviso"):
+                if nuevo_aviso.strip():
+                    guardar_aviso(nuevo_aviso.strip(), st.session_state.usuario_actual)
+                    st.rerun()
+                else:
+                    st.warning("Escribe un mensaje antes de guardar.")
+        with col_borrar_aviso:
+            if st.button("Borrar aviso", use_container_width=True, key="btn_borrar_aviso"):
+                borrar_aviso(st.session_state.usuario_actual)
+                st.rerun()
+        if aviso_actual:
+            st.caption(f"Actualizado por {aviso_actual.get('usuario','?')} · {aviso_actual.get('fecha','?')}")
 
     tab_buscador, tab_cotizador = st.tabs(["Buscador de Exámenes", "Cotizador Múltiple"])
 
