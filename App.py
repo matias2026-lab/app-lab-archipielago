@@ -1,5 +1,6 @@
 import base64
 import csv
+import json
 import os
 import time
 import unicodedata
@@ -71,6 +72,37 @@ def leer_ultimos_eventos(n=15):
         return list(reversed(filas[1:]))[:n]
     except Exception:
         return []
+
+# ==============================================================================
+# 📢 AVISO DE TIEMPOS DE RESPUESTA (banner editable por el equipo)
+# ==============================================================================
+# El tiempo de respuesta real cambia seguido (feriados, próximo envío a Santiago) y
+# hoy se avisa por mensajes fijados en WhatsApp, que alguien nuevo o que no vio el chat
+# esa mañana se puede perder. Esto lo deja visible arriba en la app para todo el equipo.
+ARCHIVO_AVISO = "aviso_tiempo_respuesta.json"
+
+def leer_aviso():
+    if not os.path.exists(ARCHIVO_AVISO): return None
+    try:
+        with open(ARCHIVO_AVISO, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+def guardar_aviso(mensaje, usuario):
+    try:
+        with open(ARCHIVO_AVISO, "w", encoding="utf-8") as f:
+            json.dump({"mensaje": mensaje, "usuario": usuario, "fecha": datetime.now().strftime("%Y-%m-%d %H:%M")}, f, ensure_ascii=False)
+        registrar_evento(usuario, "aviso_actualizado", mensaje)
+    except Exception:
+        pass
+
+def borrar_aviso(usuario):
+    try:
+        if os.path.exists(ARCHIVO_AVISO): os.remove(ARCHIVO_AVISO)
+        registrar_evento(usuario, "aviso_borrado")
+    except Exception:
+        pass
 
 # ==============================================================================
 # 🎨 ESTILOS (BURDEO + DORADO — versión profesional)
@@ -237,7 +269,20 @@ st.markdown(
     .col-name { font-weight: 600; color: var(--burdeo) !important; }
     .col-val { color: #2a2a2a !important; font-weight: 500; }
 
+    .advertencia-cobro {
+        background-color: #fff4e0; color: #7a4a00; border: 1px solid #e8b64a; border-left: 4px solid #d98c00;
+        border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; font-size: 13.5px; font-weight: 600; line-height: 1.4;
+    }
+
     .cotizador-box { margin-bottom: 20px; padding-top: 8px; }
+
+    /* Banner de aviso de tiempos de respuesta */
+    .aviso-banner {
+        background: linear-gradient(180deg, rgba(200,162,74,0.16), rgba(200,162,74,0.08));
+        border: 1px solid rgba(200,162,74,0.5); border-radius: 12px; color: #ffffff;
+        padding: 12px 16px; margin: 4px 0 20px; font-size: 14px; font-weight: 600; text-align: center;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+    }
 
     /* Alertas (success / warning / error / info) coherentes con la paleta */
     div[data-testid="stAlert"] { border-radius: 12px !important; border: none !important; box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
@@ -329,6 +374,9 @@ def es_col_nombre(c):
 def es_col_categoria(c):
     cn = normalizar(str(c)).strip()
     return cn == "seccion" or "seccion" in cn or cn == "categoria" or "categoria" in cn
+def es_col_advertencia_cobro(c):
+    cn = normalizar(str(c))
+    return "nota" in cn and "cobro" in cn
 
 # Columnas auxiliares que la app agrega internamente y que nunca deben mostrarse
 # ni tratarse como datos reales del examen.
@@ -715,6 +763,12 @@ def fusionar_prestacion_y_barnafi(fila_prest, fila_barnafi):
 def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
     fila_dict = {k: v for k, v in fila_dict.items() if k not in COLUMNAS_INTERNAS}
 
+    # La advertencia de cobro (ej. "ya incluye GGT, no cobrar aparte") es información de
+    # seguridad: se muestra siempre, sin importar qué columnas filtró la búsqueda, y se
+    # saca de fila_dict para que no aparezca ademas como una fila normal más abajo.
+    col_advertencia = next((c for c in fila_dict.keys() if es_col_advertencia_cobro(c)), None)
+    texto_advertencia = str(fila_dict.pop(col_advertencia, "")).strip() if col_advertencia else ""
+
     palabras_f = palabras_filtro.copy()
     if "horario" in palabras_f or "horarios" in palabras_f:
         palabras_f.extend(["horario", "horarios", "condicion", "condiciones", "lunes", "sabado", "viernes"])
@@ -785,6 +839,9 @@ def renderizar_tarjeta(fila_dict, palabras, palabras_filtro):
 
         if col_nombre_final in cols_a_mostrar: cols_a_mostrar.remove(col_nombre_final)
 
+    if texto_advertencia:
+        contenido_tarjeta += f'<div class="advertencia-cobro">⚠️ {texto_advertencia}</div>'
+
     mensaje_prep_impreso = False
 
     # 2. Columnas
@@ -827,6 +884,33 @@ if dict_hojas_excel is not None:
                     etiqueta = "🔑 Login" if tipo == "login" else "🧮 Cotización"
                     st.caption(f"{ts} · {usuario} · {etiqueta}")
                     if detalle: st.caption(f"　{detalle}")
+
+        aviso_actual = leer_aviso()
+        with st.expander("📢 Aviso de tiempos de respuesta"):
+            nuevo_aviso = st.text_area(
+                "Mensaje visible para todo el equipo",
+                value=aviso_actual.get("mensaje", "") if aviso_actual else "",
+                placeholder="Ej: Tiempo extendido para Hormonas y Coagulación hasta el martes 7 de julio.",
+                key="input_aviso",
+            )
+            col_guardar_aviso, col_borrar_aviso = st.columns(2)
+            with col_guardar_aviso:
+                if st.button("Guardar", use_container_width=True, type="primary", key="btn_guardar_aviso"):
+                    if nuevo_aviso.strip():
+                        guardar_aviso(nuevo_aviso.strip(), st.session_state.usuario_actual)
+                        st.rerun()
+                    else:
+                        st.warning("Escribe un mensaje antes de guardar.")
+            with col_borrar_aviso:
+                if st.button("Borrar aviso", use_container_width=True, key="btn_borrar_aviso"):
+                    borrar_aviso(st.session_state.usuario_actual)
+                    st.rerun()
+            if aviso_actual:
+                st.caption(f"Actualizado por {aviso_actual.get('usuario','?')} · {aviso_actual.get('fecha','?')}")
+
+    aviso_banner = leer_aviso()
+    if aviso_banner and aviso_banner.get("mensaje", "").strip():
+        st.markdown(f'<div class="aviso-banner">📢 {aviso_banner["mensaje"]}</div>', unsafe_allow_html=True)
 
     tab_buscador, tab_cotizador = st.tabs(["Buscador de Exámenes", "Cotizador Múltiple"])
 
@@ -1101,6 +1185,10 @@ if dict_hojas_excel is not None:
                         st.warning(f"**{nombre.upper()}** ➔ no hubo match exacto, se usó el más parecido: **{nombre_real}** ➔ **{formatear_pesos(precio)}**")
                     else:
                         st.success(f"**{nombre.upper()}** ({nombre_real}) ➔ **{formatear_pesos(precio)}**")
+
+                    col_advertencia_cotiz = next((c for c, v in mejor_fila.items() if c not in COLUMNAS_INTERNAS and es_col_advertencia_cobro(c) and str(v).strip() != ""), None)
+                    if col_advertencia_cotiz:
+                        st.markdown(f'<div class="advertencia-cobro">⚠️ {mejor_fila[col_advertencia_cotiz]}</div>', unsafe_allow_html=True)
                 else:
                     st.error(f"**{nombre.upper()}** ➔ No encontrado.")
 

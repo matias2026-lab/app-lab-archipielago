@@ -1,0 +1,5 @@
+# Con esto, al guardar un cambio en App.py mientras "streamlit run App.py" sigue
+# corriendo, la app se recarga sola (sin tener que hacer clic en "Rerun" ni volver
+# a ejecutar el comando en la terminal).
+[server]
+runOnSave = true
