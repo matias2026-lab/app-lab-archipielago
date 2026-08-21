@@ -306,6 +306,18 @@ st.markdown(
     }
     [data-testid="stExpander"] summary:hover { color: var(--dorado-claro) !important; }
 
+    /* Menú "☰" (Actualizar datos / Cerrar Sesión) */
+    [data-testid="stPopoverButton"] {
+        background-color: rgba(255,255,255,0.04) !important; color: #ffffff !important;
+        border: 1px solid rgba(244,236,230,0.28) !important; border-radius: 9px !important;
+        font-size: 17px !important; box-shadow: none !important;
+    }
+    [data-testid="stPopoverButton"]:hover { border-color: var(--dorado) !important; color: var(--dorado-claro) !important; }
+    [data-testid="stPopoverBody"] {
+        background-color: var(--burdeo-oscuro) !important;
+        border: 1px solid rgba(200,162,74,0.45) !important;
+    }
+
     /* Alertas (success / warning / error / info) coherentes con la paleta */
     div[data-testid="stAlert"] { border-radius: 12px !important; border: none !important; box-shadow: 0 6px 16px rgba(0,0,0,0.18); }
 
@@ -325,17 +337,17 @@ def obtener_img_base64(ruta_imagen):
 
 # ----------------- BARRA SUPERIOR -----------------
 if st.session_state.autenticado:
-    col_recargar, col_salir = st.columns([0.5, 0.5])
-    with col_recargar:
-        if st.button("🔄 Actualizar datos", use_container_width=True, help="Vuelve a leer el Excel desde disco (usar si se editaron precios o exámenes)."):
-            st.cache_data.clear()
-            st.success("Datos actualizados.")
-            st.rerun()
-    with col_salir:
-        if st.button("Cerrar Sesión", use_container_width=True):
-            st.session_state.autenticado = False
-            st.session_state.usuario_actual = ""
-            st.rerun()
+    col_espacio, col_menu = st.columns([0.85, 0.15])
+    with col_menu:
+        with st.popover("☰", use_container_width=True, help="Más opciones"):
+            if st.button("🔄 Actualizar datos", use_container_width=True, help="Vuelve a leer el Excel desde disco (usar si se editaron precios o exámenes)."):
+                st.cache_data.clear()
+                st.success("Datos actualizados.")
+                st.rerun()
+            if st.button("Cerrar Sesión", use_container_width=True):
+                st.session_state.autenticado = False
+                st.session_state.usuario_actual = ""
+                st.rerun()
 
 if logo_encontrado:
   img_b64 = obtener_img_base64(logo_encontrado)
