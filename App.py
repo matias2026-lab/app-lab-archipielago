@@ -352,29 +352,29 @@ if st.session_state.autenticado:
                 st.success("Datos actualizados.")
                 st.rerun()
 
-            st.markdown("**Aviso de tiempos de respuesta / envíos**")
-            aviso_actual_menu = leer_aviso()
-            nuevo_aviso = st.text_area(
-                "Mensaje visible para todo el equipo",
-                value=aviso_actual_menu.get("mensaje", "") if aviso_actual_menu else "",
-                placeholder="Ej: Tiempo extendido para Hormonas y Coagulación hasta el martes 7 de julio.",
-                key="input_aviso",
-                label_visibility="collapsed",
-            )
-            col_guardar_aviso, col_borrar_aviso = st.columns(2)
-            with col_guardar_aviso:
-                if st.button("Guardar aviso", use_container_width=True, type="primary", key="btn_guardar_aviso"):
-                    if nuevo_aviso.strip():
-                        guardar_aviso(nuevo_aviso.strip(), st.session_state.usuario_actual)
+            with st.expander("Editor de mensaje"):
+                aviso_actual_menu = leer_aviso()
+                nuevo_aviso = st.text_area(
+                    "Mensaje visible para todo el equipo",
+                    value=aviso_actual_menu.get("mensaje", "") if aviso_actual_menu else "",
+                    placeholder="Ej: Tiempo extendido para Hormonas y Coagulación hasta el martes 7 de julio.",
+                    key="input_aviso",
+                    label_visibility="collapsed",
+                )
+                col_guardar_aviso, col_borrar_aviso = st.columns(2)
+                with col_guardar_aviso:
+                    if st.button("Guardar aviso", use_container_width=True, type="primary", key="btn_guardar_aviso"):
+                        if nuevo_aviso.strip():
+                            guardar_aviso(nuevo_aviso.strip(), st.session_state.usuario_actual)
+                            st.rerun()
+                        else:
+                            st.warning("Escribe un mensaje antes de guardar.")
+                with col_borrar_aviso:
+                    if st.button("Borrar aviso", use_container_width=True, key="btn_borrar_aviso"):
+                        borrar_aviso(st.session_state.usuario_actual)
                         st.rerun()
-                    else:
-                        st.warning("Escribe un mensaje antes de guardar.")
-            with col_borrar_aviso:
-                if st.button("Borrar aviso", use_container_width=True, key="btn_borrar_aviso"):
-                    borrar_aviso(st.session_state.usuario_actual)
-                    st.rerun()
-            if aviso_actual_menu:
-                st.caption(f"Actualizado por {aviso_actual_menu.get('usuario','?')} · {aviso_actual_menu.get('fecha','?')}")
+                if aviso_actual_menu:
+                    st.caption(f"Actualizado por {aviso_actual_menu.get('usuario','?')} · {aviso_actual_menu.get('fecha','?')}")
 
             st.markdown("---")
             if st.button("Cerrar Sesión", use_container_width=True):
