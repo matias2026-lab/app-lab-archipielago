@@ -152,10 +152,6 @@ st.markdown(
         font-size: clamp(1.5rem, 5vw, 2.05rem) !important; letter-spacing: 0.2px;
         margin-top: 2px !important; margin-bottom: 2px !important;
     }
-    .subtitle-text {
-        text-align: center; color: rgba(244,236,230,0.55); font-size: 0.78rem; font-weight: 600;
-        letter-spacing: 2px; text-transform: uppercase; margin-bottom: 22px;
-    }
     .header-divider { height: 1px; max-width: 260px; margin: 0 auto 26px; background: linear-gradient(90deg, transparent, rgba(200,162,74,0.55), transparent); }
 
     /* Etiquetas de todos los widgets */
@@ -337,7 +333,7 @@ def obtener_img_base64(ruta_imagen):
 
 # ----------------- BARRA SUPERIOR -----------------
 if st.session_state.autenticado:
-    col_espacio, col_menu = st.columns([0.85, 0.15])
+    col_menu, col_espacio = st.columns([0.15, 0.85])
     with col_menu:
         with st.popover("☰", use_container_width=True, help="Más opciones"):
             if st.button("🔄 Actualizar datos", use_container_width=True, help="Vuelve a leer el Excel desde disco (usar si se editaron precios o exámenes)."):
@@ -355,7 +351,6 @@ if logo_encontrado:
   st.markdown(f'<div class="app-logo"><img src="data:{mime};base64,{img_b64}"></div>', unsafe_allow_html=True)
 
 st.markdown('<h1 class="title-text">Laboratorio Archipiélago</h1>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle-text">Sistema de Consulta y Cotización de Exámenes</div>', unsafe_allow_html=True)
 st.markdown('<div class="header-divider"></div>', unsafe_allow_html=True)
 
 # ==============================================================================
@@ -954,7 +949,8 @@ if dict_hojas_excel is not None:
     # ---------------------------------------------------------
     with tab_buscador:
         categorias_disponibles = sorted({str(c) for c in df_todas_las_hojas_cache['__categoria__'].unique() if str(c).strip()})
-        categorias_sel = st.multiselect("Filtrar por categoría/sección (opcional)", categorias_disponibles, key="filtro_categorias")
+        with st.expander("Filtrar por categoría/sección (opcional)"):
+            categorias_sel = st.multiselect("Categorías", categorias_disponibles, key="filtro_categorias", label_visibility="collapsed")
 
         # Streamlit no permite escribir en st.session_state["input_busqueda"] una vez que
         # ese widget ya fue instanciado en este mismo ciclo. Por eso las sugerencias usan
