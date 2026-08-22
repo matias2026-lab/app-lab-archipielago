@@ -145,10 +145,10 @@ st.markdown(
     [data-testid="InputInstructions"], [data-testid="stInputInstructions"] { display: none !important; }
 
     /* Encabezado: logo + título */
-    .app-logo { text-align: center; margin: 2px 0 10px; }
+    .app-logo { text-align: center !important; margin: 2px 0 10px; }
     .app-logo img { width: 108px; max-width: 55%; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35)); }
     .title-text {
-        color: #ffffff !important; text-align: center; font-weight: 700 !important;
+        color: #ffffff !important; text-align: center !important; font-weight: 700 !important;
         font-size: clamp(1.5rem, 5vw, 2.05rem) !important; letter-spacing: 0.2px;
         margin-top: 2px !important; margin-bottom: 2px !important;
     }
