@@ -338,6 +338,13 @@ st.markdown(
     [data-testid="stPopoverBody"] [data-testid="stExpander"] summary:hover {
         background-color: rgba(255,255,255,0.09) !important; color: var(--dorado-claro) !important;
     }
+    /* Streamlit envuelve el texto del botón en un div/span interno con su propio
+       "justify-content: center", que ignora el flex-start puesto arriba en el
+       <button> — hay que corregirlo también en ese nivel interno. */
+    [data-testid="stPopoverBody"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] > div,
+    [data-testid="stPopoverBody"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] > div > span {
+        justify-content: flex-start !important;
+    }
     /* Editor de mensaje (expander): sin recuadro propio, solo su encabezado usa el estilo de ítem */
     [data-testid="stPopoverBody"] [data-testid="stExpander"] {
         background-color: transparent !important; border: none !important; margin-bottom: 4px !important;
@@ -346,6 +353,10 @@ st.markdown(
     [data-testid="stPopoverBody"] [data-testid="stExpander"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] {
         background-color: rgba(255,255,255,0.04) !important; border: 1px solid rgba(244,236,230,0.28) !important;
         text-align: center !important; justify-content: center !important; padding: 9px 14px !important;
+    }
+    [data-testid="stPopoverBody"] [data-testid="stExpander"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] > div,
+    [data-testid="stPopoverBody"] [data-testid="stExpander"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] > div > span {
+        justify-content: center !important;
     }
     [data-testid="stPopoverBody"] [data-testid="stExpander"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"]:hover {
         border-color: var(--dorado) !important; background-color: rgba(200,162,74,0.10) !important;
@@ -374,7 +385,7 @@ st.markdown(
             padding: 6px 10px !important; margin-right: auto !important;
         }
 
-        [role="tablist"] { gap: 16px !important; }
+        [role="tablist"] { gap: 16px !important; justify-content: center !important; }
         div[data-testid="stTab"] p { font-size: 14px !important; }
 
         [data-testid="stExpander"] summary { font-size: 13px !important; }
