@@ -263,6 +263,12 @@ st.markdown(
         background-color: #ffffff !important; border-radius: 14px !important; border: none !important;
         box-shadow: 0 6px 16px rgba(0,0,0,0.22) !important;
     }
+    /* El texto que se escribe para buscar dentro del selector heredaba el color
+       claro de la app (blanco sobre blanco = invisible). Se fuerza texto oscuro. */
+    div[data-baseweb="select"] input {
+        color: #1a1a1a !important; -webkit-text-fill-color: #1a1a1a !important; caret-color: var(--burdeo) !important;
+    }
+    div[data-baseweb="select"] [data-baseweb="placeholder"] { color: rgba(26,26,26,0.55) !important; }
     [data-baseweb="tag"] { background-color: var(--burdeo) !important; border-radius: 6px !important; }
     [data-baseweb="tag"] span, [data-baseweb="tag"] svg { color: #ffffff !important; fill: #ffffff !important; }
 
@@ -1025,7 +1031,10 @@ if dict_hojas_excel is not None:
     with tab_buscador:
         categorias_disponibles = sorted({str(c) for c in df_todas_las_hojas_cache['__categoria__'].unique() if str(c).strip()})
         with st.expander("Filtrar por categoría/sección (opcional)"):
-            categorias_sel = st.multiselect("Categorías", categorias_disponibles, key="filtro_categorias", label_visibility="collapsed")
+            categorias_sel = st.multiselect(
+                "Categorías", categorias_disponibles, key="filtro_categorias", label_visibility="collapsed",
+                placeholder="Elige una o más categorías",
+            )
 
         # Streamlit no permite escribir en st.session_state["input_busqueda"] una vez que
         # ese widget ya fue instanciado en este mismo ciclo. Por eso las sugerencias usan
