@@ -326,19 +326,22 @@ st.markdown(
         border-color: rgba(244,236,230,0.14) !important;
         margin: 4px 0 !important;
     }
-    /* Botones del menú ☰ (Actualizar datos / Cerrar Sesión): estilo de ítem de lista, sin recuadro */
-    [data-testid="stPopoverBody"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] {
-        background-color: transparent !important; border: none !important; text-align: left !important;
-        justify-content: flex-start !important; padding: 8px 6px !important; font-weight: 600 !important;
+    /* Ítems del menú ☰ (Actualizar datos / Editor de mensaje / Cerrar Sesión):
+       mismo fondo, alto y alineación para los tres, sin bordes. */
+    [data-testid="stPopoverBody"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"],
+    [data-testid="stPopoverBody"] [data-testid="stExpander"] summary {
+        background-color: rgba(255,255,255,0.045) !important; border: none !important; text-align: left !important;
+        justify-content: flex-start !important; padding: 10px 12px !important; font-weight: 600 !important;
+        border-radius: 8px !important; min-height: 40px !important;
     }
-    [data-testid="stPopoverBody"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"]:hover {
-        background-color: rgba(255,255,255,0.06) !important; color: var(--dorado-claro) !important;
+    [data-testid="stPopoverBody"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"]:hover,
+    [data-testid="stPopoverBody"] [data-testid="stExpander"] summary:hover {
+        background-color: rgba(255,255,255,0.09) !important; color: var(--dorado-claro) !important;
     }
-    /* Editor de mensaje (expander) anidado en el menú ☰: sin recuadro propio */
+    /* Editor de mensaje (expander): sin recuadro propio, solo su encabezado usa el estilo de ítem */
     [data-testid="stPopoverBody"] [data-testid="stExpander"] {
         background-color: transparent !important; border: none !important; margin-bottom: 4px !important;
     }
-    [data-testid="stPopoverBody"] [data-testid="stExpander"] summary { padding: 8px 6px !important; }
     /* Excepción: "Borrar aviso" (dentro del editor) conserva look de botón real, no de ítem de menú */
     [data-testid="stPopoverBody"] [data-testid="stExpander"] div[data-testid="stButton"] button[data-testid="stBaseButton-secondary"] {
         background-color: rgba(255,255,255,0.04) !important; border: 1px solid rgba(244,236,230,0.28) !important;
